@@ -539,7 +539,44 @@ function Timetable({ timetable, setTimetable, notify }) {
   const shown = rows.length ? visibleRows : Object.entries(timetable).flatMap(([day,items])=>(items||[]).map((item,i)=>({...item,day,id:`${day}-${i}`,className:'Class not specified',division:'Division not specified'}))).filter(r=>days.includes(r.day));
   return <div className="page-stack"><div className="welcome-row"><div><div className="eyebrow"><CalendarDays size={14}/> WEEKLY SCHEDULE</div><h1>Your online timetable</h1><p className="muted">Upload the college spreadsheet, then choose the class and division.</p></div><Badge tone="purple">{shown.length} classes</Badge></div>
     <section className="panel timetable-upload"><div><h2>Import timetable spreadsheet</h2><p className="muted">Excel or CSV. The app detects Day, Subject, Class/Branch and Division columns from the first worksheet.</p><label className="primary upload-label">Choose spreadsheet<input type="file" accept=".xlsx,.xls,.csv" onChange={upload} hidden/></label>{fileName&&<small className="upload-success">Imported: {fileName}</small>}</div><div className="upload-hint"><BookOpen size={28}/><b>Excel or CSV</b><small>Saved locally in this browser.</small></div></section>
-    <section className="panel timetable-select-panel"><SectionTitle title="Choose your timetable" sub="Select the class and division you want to display."/><div className="timetable-filters"><label className="field-label">Class / Branch<select value={selectedClass} onChange={e=>{setSelectedClass(e.target.value);setSelectedDivision('All')}}><option value="All">All classes</option>{classOptions.map(v=><option key={v}>{v}</option>)}</select></label><label className="field-label">Division / Section<select value={selectedDivision} onChange={e=>setSelectedDivision(e.target.value)}><option value="All">All divisions</option>{divisionOptions.map(v=><option key={v}>{v}</option>)}</select></label></div>{!rows.length&&<p className="muted">Upload your timetable spreadsheet to populate the class and division lists.</p>}</section>
+    <section className="panel timetable-select-panel"><SectionTitle title="Choose your timetable" sub="Select the class and division you want to display."/>
+<div className="timetable-filters">
+  <label className="field-label">
+    Class / Branch
+    <CustomSelect
+      ariaLabel="Class / Branch"
+      value={selectedClass}
+      onChange={(value) => {
+        setSelectedClass(value);
+        setSelectedDivision('All');
+      }}
+      options={[
+        { value: 'All', label: 'All classes' },
+        ...classOptions.map((v) => ({
+          value: v,
+          label: v,
+        })),
+      ]}
+    />
+  </label>
+
+  <label className="field-label">
+    Division / Section
+    <CustomSelect
+      ariaLabel="Division / Section"
+      value={selectedDivision}
+      onChange={setSelectedDivision}
+      options={[
+        { value: 'All', label: 'All divisions' },
+        ...divisionOptions.map((v) => ({
+          value: v,
+          label: v,
+        })),
+      ]}
+    />
+  </label>
+</div>
+{!rows.length&&<p className="muted">Upload your timetable spreadsheet to populate the class and division lists.</p>}</section>
     <div className="timetable-grid">{days.map(day=>{const items=shown.filter(r=>r.day===day);return <section className="panel day-card" key={day}><div className="day-heading"><h2>{day}</h2><Badge>{items.length} items</Badge></div>{items.length?items.sort((a,b)=>a.time.localeCompare(b.time)).map((item,i)=><div className="timetable-item" key={`${day}-${item.id ?? i}`}><strong>{item.time}</strong><b>{item.subject}</b>{item.className && item.className!=='Class not specified'&&<small>{item.className}{item.division&&item.division!=='Division not specified'?` · ${item.division}`:''}</small>}{item.room&&<small><MapPin size={12}/> {item.room}</small>}{item.teacher&&<small>{item.teacher}</small>}</div>):<p className="muted">No classes for this selection.</p>}</section>})}</div><p className="table-note"><CircleHelp size={15}/> If your spreadsheet uses different column headings, tell me the headers and I can tune the importer.</p></div>
 }
 
