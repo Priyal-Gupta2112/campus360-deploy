@@ -2549,3 +2549,22 @@ body.dark-mode .auth-brand .brand-mark {
   .leader-row { grid-template-columns: 38px 1fr; padding: 14px; }
   .app-shell.sidebar-collapsed .sidebar { transform: translateX(-105%); }
 }
+
+/* Campus360 signup student details — visual-only additions */
+.signup-fields { display: grid; gap: 14px; margin: 2px 0 4px; }
+.signup-fields-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
+.auth-select {
+  appearance: none; -webkit-appearance: none; width: 100%; min-height: 46px;
+  padding: 12px 42px 12px 14px; border: 1px solid var(--border, #dbe2ea);
+  border-radius: 14px; background-color: var(--input-bg, var(--surface, #fff));
+  color: var(--text, #172033); font: inherit; line-height: 1.35; cursor: pointer;
+  outline: none; transition: border-color .18s ease, box-shadow .18s ease;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center;
+}
+.auth-select:focus { border-color: var(--primary, #7562e8); box-shadow: 0 0 0 3px rgba(117,98,232,.14); }
+.auth-select option { color: #172033; background: #fff; }
+.signup-fields input { width: 100%; min-width: 0; }
+@media (max-width: 560px) {
+  .signup-fields-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+}
