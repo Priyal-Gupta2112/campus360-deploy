@@ -128,11 +128,11 @@ async function sendDemoOtp(e) {
   setAuthError('');
 
   try {
-    const response = await fetch('/api/minimoth/v1/otp/send', {
+    const response = await fetch('https://api.minimoth.dev/v1/otp/verify', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'X-Api-Key': 'YOUR_MINIMOTH_API_KEY_HERE', // Paste your real MiniMoth key
+    'X-Api-Key': 'mm_live_350a16861e7fb54185d79a297f5b0ca72f6e4d3a43ec0d2b5314d2744cb4de3ed0d569df02f3795d44bc2879c09bb888', // Paste your real MiniMoth key
   },
   body: JSON.stringify({ phone: normalizedPhone }),
 });
