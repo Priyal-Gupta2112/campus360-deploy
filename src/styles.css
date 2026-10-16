@@ -94,98 +94,386 @@ button.directory-card:hover { transform:translateY(-2px);border-color:#c7c1ff; }
 @media(max-width:1100px) { .directory-grid,.skills-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .recommendation-grid { grid-template-columns:1fr; } }
 @media(max-width:760px) { .dashboard-two-col { grid-template-columns:1fr; } .form-two { grid-template-columns:1fr; } .challenge-role-row { align-items:stretch; flex-direction:column; } .challenge-role-row .muted { margin:0; } .directory-grid,.skills-grid { grid-template-columns:1fr; } .assignment-row { flex-wrap:wrap; } .assignment-copy { min-width:calc(100% - 70px); } }
 
-/* Accessibility pass: larger, easier-to-read typography across Campus360 */
-:root { font-size: 17px; }
-body { font-size: 15px; }
+/* ===== Campus360: Improved Readability ===== */
+
+/* Overall font size */
+html {
+  font-size: 17px;
+}
+
+body {
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* Main headings */
+h1 {
+  font-size: 2rem;
+}
+
+h2 {
+  font-size: 1.6rem;
+}
+
+h3 {
+  font-size: 1.3rem;
+}
+
+/* Navigation and sidebar */
+nav,
+.sidebar,
+.nav-item {
+  font-size: 15px;
+}
+
+/* Buttons */
+button,
+.btn {
+  font-size: 14px;
+  padding: 10px 16px;
+}
+
+/* Cards and dashboard content */
+.card,
+.stat-card,
+.dashboard-card {
+  font-size: 15px;
+}
+
+/* Labels, descriptions and secondary text */
+label,
+p,
+li,
+small {
+  line-height: 1.6;
+}
+
+/* Form fields */
+input,
+select,
+textarea {
+  font-size: 15px;
+  padding: 10px 12px;
+}
+
+/* Tables */
+table {
+  font-size: 14px;
+}
+
+th,
+td {
+  padding: 12px;
+}
+
+/* Mobile readability */
+@media (max-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+
+  button,
+  .btn {
+    font-size: 14px;
+  }
+  
+}
+
+/* ===== Campus360 Dark Mode ===== */
+
+body.dark-mode {
+  background: #0b1020;
+  color: #e5eaf5;
+  color-scheme: dark;
+}
+
+body.dark-mode #root,
+body.dark-mode .app-shell,
+body.dark-mode .main-area,
+body.dark-mode .page-content {
+  background: #0b1020;
+  color: #e5eaf5;
+}
+
+body.dark-mode .sidebar,
+body.dark-mode .topbar,
+body.dark-mode .panel,
+body.dark-mode .stat,
+body.dark-mode .modal,
+body.dark-mode .auth-card,
+body.dark-mode .help-card,
+body.dark-mode .directory-card,
+body.dark-mode .skill-card,
+body.dark-mode .assignment-row,
+body.dark-mode .event-row {
+  background-color: #151d30;
+  color: #e5eaf5;
+  border-color: #2b3650;
+}
+
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3,
+body.dark-mode h4,
+body.dark-mode p,
+body.dark-mode label,
+body.dark-mode strong,
+body.dark-mode b,
+body.dark-mode .crumb,
+body.dark-mode .nav-item {
+  color: #e5eaf5;
+}
+
+body.dark-mode .muted,
+body.dark-mode small,
+body.dark-mode .subtitle {
+  color: #a4b0c8;
+}
+
+body.dark-mode input,
+body.dark-mode textarea,
+body.dark-mode select {
+  background: #101729;
+  color: #f1f5ff;
+  border-color: #35415d;
+}
+
+body.dark-mode .searchbox,
+body.dark-mode .phone-input,
+body.dark-mode .auth-tabs {
+  background: #101729;
+  border-color: #35415d;
+  color: #e5eaf5;
+}
+
+body.dark-mode .nav-item.active,
+body.dark-mode .tab-row button.active,
+body.dark-mode .filter-row button.active {
+  background: #293655;
+  color: #c7d2fe;
+}
+
+body.dark-mode .secondary,
+body.dark-mode .icon-button,
+body.dark-mode .user-button,
+body.dark-mode .theme-toggle {
+  background: #151d30;
+  color: #e5eaf5;
+  border-color: #35415d;
+}
+
+body.dark-mode .modal-backdrop {
+  background: rgb(0 0 0 / 75%);
+}
+
+body.dark-mode .footer {
+  color: #a4b0c8;
+  border-color: #2b3650;
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 12px;
+  min-height: 40px;
+  border: 1px solid #d8deeb;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.auth-theme-toggle {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+}
+
+@media (max-width: 600px) {
+  .auth-theme-toggle {
+    top: 16px;
+    right: 16px;
+  }
+
+  .theme-toggle span {
+    font-size: 12px;
+  }
+}
+
+/* Campus Credits shortcut */
+.quick-grid > button { min-width: 0; }
+.quick-grid > button > b { display: block; }
+.quick-grid > button > small { display: block; line-height: 1.5; }
+body.dark-mode .quick-grid > button { background: #151d30; color: #e5eaf5; border-color: #2b3650; }
+body.dark-mode .quick-grid > button > small { color: #a4b0c8; }
+
+
+/* ===== Campus360: Global Font Size Upgrade ===== */
+/* Larger, easier-to-read typography while keeping the existing design. */
+:root { font-size: 16px; }
+body { font-size: 16px; line-height: 1.6; }
+
+/* Navigation, utility controls and page copy */
 .nav-item { font-size: 14px; }
 .nav-label { font-size: 11px; }
 .profile-mini b, .help-card b { font-size: 13px; }
-.profile-mini small { font-size: 11px; }
-.help-card p { font-size: 12px; }
-.help-card button, .sidebar-foot { font-size: 11px; }
+.profile-mini small, .help-card p, .help-card button { font-size: 12px; }
 .crumb { font-size: 13px; }
 .searchbox input, .user-button { font-size: 13px; }
-.primary, .secondary { font-size: 13px; }
-.badge { font-size: 11px; }
 .eyebrow { font-size: 11px; }
 .muted { font-size: 14px; }
-.page-content { font-size: 15px; }
-.stat-top { font-size: 13px; }
-.stat > small { font-size: 12px; }
+.primary, .secondary, .text-button, .tab-row button, .filter-row button { font-size: 13px; }
+.badge { font-size: 11px; }
+
+/* Headings */
+.welcome-row h1 { font-size: clamp(28px, 2.8vw, 36px); }
+.hero-copy h2 { font-size: 34px; }
 .section-title h2 { font-size: 18px; }
 .section-title p { font-size: 13px; }
-.text-button { font-size: 12px; }
-.schedule-info b, .event-info b { font-size: 12px; }
-.schedule-info small, .event-info small { font-size: 11px; }
-.schedule-item .badge { font-size: 10px; }
+.challenge-hero h2 { font-size: 29px; }
+
+/* Dashboard cards and descriptions */
+.stat-top { font-size: 12px; }
+.stat>strong { font-size: 29px; }
+.stat>small { font-size: 12px; }
+.quick-grid b { font-size: 13px; }
+.quick-grid small { font-size: 12px; }
+.schedule-info b, .event-info b { font-size: 13px; }
+.schedule-info small, .event-info small { font-size: 12px; }
 .time-pill { font-size: 11px; }
 .event-date small { font-size: 9px; }
-.quick-grid > button b { font-size: 13px; }
-.quick-grid > button small { font-size: 11px; }
-.field-label, .auth-label { font-size: 12px; }
-.field-label input, .field-label select, .field-label textarea,
-.auth-label > input, .phone-input input { font-size: 14px; }
-.table-wrap table { font-size: 13px; }
-.table-wrap th { font-size: 12px; }
-.table-note, .map-disclaimer { font-size: 12px; }
-.dash-stat-card span { font-size: 12px; }
-.dash-stat-card small { font-size: 11px; }
-.dash-action-copy strong { font-size: 14px; }
-.dash-action-copy span { font-size: 12px; }
-.dash-event-copy strong { font-size: 13px; }
-.dash-event-copy span, .dash-event-status { font-size: 11px; }
-.assignment-copy b { font-size: 13px; }
+.floating-card b { font-size: 12px; }
+.floating-card small { font-size: 10px; }
+
+/* Feature pages, lists and cards */
+.assignment-copy b { font-size: 14px; }
 .assignment-copy small { font-size: 12px; }
-.recommendation-card b { font-size: 14px; }
-.recommendation-card small { font-size: 13px; }
-.directory-card > b { font-size: 14px; }
-.directory-card > small, .directory-card > em { font-size: 12px; }
-.directory-card > p { font-size: 13px; }
+.recommendation-card b, .directory-card>b { font-size: 15px; }
+.recommendation-card small, .directory-card>p { font-size: 13px; }
+.recommendation-card em, .directory-card em { font-size: 12px; }
+.directory-card>small { font-size: 12px; }
 .skill-card h3 { font-size: 17px; }
 .skill-card p { font-size: 13px; }
-.skill-owner b { font-size: 12px; }
-.skill-owner small { font-size: 11px; }
+.skill-wants span { font-size: 12px; }
+.skill-wants b { font-size: 13px; }
+.skill-owner b { font-size: 13px; }
+.skill-owner small { font-size: 12px; }
+.challenge-info b { font-size: 13px; }
+.challenge-info small { font-size: 12px; }
+.points { font-size: 12px; }
+.leader-row>b, .leader-row>strong { font-size: 12px; }
+.contact-card>b { font-size: 13px; }
+.contact-card p, .contact-card>small { font-size: 12px; }
+.location-grid b { font-size: 13px; }
+.location-grid small { font-size: 12px; }
+.ride-route { font-size: 13px; }
+.ride-main p, .ride-meta { font-size: 12px; }
+.map-disclaimer { font-size: 12px; }
+.ride-verification-note { font-size: 12px; }
+.challenge-detail-meta span { font-size: 13px; }
+.role-gate p { font-size: 13px; }
+
+/* Forms, tables and dialogs */
+.field-label { font-size: 12px; }
+.field-label input, .subject-edit-row input, .inline-form input,
+.field-label select, .modal-form textarea, .field-label textarea { font-size: 14px; }
+th { font-size: 11px; }
+td { font-size: 12px; }
+.cell-sub { font-size: 10px; }
+.table-note { font-size: 11px; }
+.modal h2 { font-size: 24px; }
+.toast { font-size: 13px; }
+
+/* Login and sign-up screen */
+.auth-intro>p { font-size: 15px; }
+.auth-benefits>div { font-size: 14px; }
+.auth-card h2 { font-size: 27px; }
 .auth-subtitle { font-size: 13px; }
 .auth-tabs button { font-size: 13px; }
-.auth-demo-note, .auth-legal { font-size: 11px; }
+.auth-label { font-size: 12px; }
+.auth-label>input, .phone-input input, .phone-input span { font-size: 14px; }
+.auth-submit { font-size: 14px; }
+.auth-legal { font-size: 11px; }
 
-@media (max-width: 650px) {
-  .page-content { padding: 20px 16px; }
-  .topbar { padding: 0 16px; }
-  .dash-stat-card span { font-size: 11px; }
-  .dash-stat-card small { font-size: 10px; }
-  .dash-action-copy span { font-size: 11px; }
-}
-
-/* Campus360 readability pass: larger type across all screens */
-:root { font-size: 18px; }
-body { font-size: 16px; line-height: 1.6; }
-button, input, select, textarea { font: inherit; }
-button { line-height: 1.35; }
-p, li, label, .muted, .cell-sub, .map-disclaimer { line-height: 1.65; }
-.sidebar .nav-item { font-size: 15px; min-height: 44px; }
-.topbar { min-height: 70px; }
-.crumb, .top-actions, .user-button { font-size: 14px; }
-.page-content h1 { font-size: clamp(1.8rem, 2.8vw, 2.35rem); line-height: 1.2; }
-.page-content h2, .modal h2 { font-size: 1.35rem; line-height: 1.3; }
-.page-content h3 { font-size: 1.15rem; }
-.page-content p, .page-content li, .page-content label, .page-content input, .page-content select, .page-content textarea { font-size: 15px; }
-.page-content button { font-size: 14px; }
-.page-content small, .page-content .badge, .page-content .cell-sub { font-size: 13px; }
-.stat strong { font-size: 2rem; }
-.stat-top, .stat small { font-size: 14px; }
-.today-date { display:inline-flex; align-items:center; gap:7px; color:var(--muted, #64748b); font-size:14px; white-space:nowrap; }
-.auth-student-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.auth-student-grid .auth-label { min-width:0; }
-.auth-label input, .auth-label select { width:100%; box-sizing:border-box; }
-.timetable-controls { display:grid; grid-template-columns:minmax(160px,1fr) minmax(180px,1fr) auto; gap:14px; align-items:end; margin-bottom:16px; }
-.timetable-upload { padding:16px; border:1px dashed var(--border, #cbd5e1); border-radius:14px; margin-bottom:16px; }
-.timetable-actions { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
-.empty-history { border-radius:12px; padding:16px; background:rgba(148,163,184,.10); }
+/* Keep typography comfortable on smaller screens without causing overflow. */
 @media (max-width: 760px) {
-  :root { font-size:16px; }
-  .auth-student-grid, .timetable-controls { grid-template-columns:1fr; }
-  .today-date { display:none; }
-  .page-content h1 { font-size:1.8rem; }
-  .page-content button { min-height:40px; }
+  .welcome-row h1 { font-size: 27px; }
+  .hero-copy h2 { font-size: 29px; }
+  .section-title h2 { font-size: 17px; }
+  .muted { font-size: 13px; }
+  .quick-grid b { font-size: 13px; }
+  .quick-grid small { font-size: 12px; }
+  .nav-item { font-size: 14px; }
+  .auth-intro h1 { font-size: 39px; }
 }
+@media (max-width: 410px) {
+  .welcome-row h1 { font-size: 24px; }
+  .stat>strong { font-size: 24px; }
+  .quick-grid b { font-size: 12px; }
+  .quick-grid small { font-size: 11px; }
+}
+
+
+/* Campus360 requested feature pack */
+.field-label select,.field-label textarea,.field-label input[type=date],.field-label input[type=password],.field-label input[type=number]{width:100%;border:1px solid #e2e6ef;border-radius:8px;padding:10px;font:inherit;background:#fff;color:#344054;min-width:0}
+.ride-requests{flex-basis:100%;border-top:1px solid #edf0f5;padding-top:12px;margin-top:5px;display:grid;gap:8px}.ride-requests>b{font-size:13px;color:#344054}.ride-request-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px;background:#f8f9fc;border-radius:8px;font-size:12px}.request-actions{display:flex;gap:6px}.request-actions .compact{font-size:11px;padding:7px 10px}.logout-nav{margin-bottom:10px;color:#ffc8c8!important}.logout-nav:hover{background:#3a2029!important}.timetable-upload{display:flex;align-items:center;justify-content:space-between;gap:20px}.timetable-upload h2{font:800 18px Manrope;margin:0}.upload-label{margin-top:14px;display:inline-flex;cursor:pointer}.upload-success{display:block;color:#188451;margin-top:9px;font-size:12px}.upload-hint{min-width:170px;display:grid;justify-items:center;gap:8px;padding:18px;background:#f7f6ff;border-radius:12px;color:#5b50e5;text-align:center}.upload-hint small{font-size:11px;color:#7f899b}.timetable-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.day-card{min-width:0}.day-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}.day-heading h2{font:800 17px Manrope;margin:0}.timetable-item{display:grid;gap:5px;border-left:3px solid #6a5fe8;background:#f8f8ff;padding:10px 12px;border-radius:0 8px 8px 0;margin-top:8px}.timetable-item strong{font-size:11px;color:#5b50e5}.timetable-item b{font-size:13px;color:#30394b}.timetable-item small{font-size:11px;color:#7c8799;display:flex;align-items:center;gap:4px}.cgpa-summary{display:flex;align-items:center;justify-content:space-between;padding:18px;background:#f6f5ff;border-radius:12px;margin-bottom:14px;color:#626d80}.cgpa-summary strong{font:800 30px Manrope;color:#5147e5}.cgpa-summary small{font-size:13px;color:#929bad}.semester-list{display:grid;gap:10px}.semester-row{display:grid;grid-template-columns:1fr .7fr .7fr auto;align-items:end;gap:10px;padding:12px;border:1px solid #edf0f5;border-radius:10px}.semester-row .field-label{min-width:0}.semester-row input{min-width:0}.modal-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:18px}
+@media(max-width:760px){.timetable-grid{grid-template-columns:1fr}.timetable-upload{align-items:flex-start;flex-direction:column}.upload-hint{width:100%;min-width:0}.semester-row{grid-template-columns:1fr 1fr}.semester-row .secondary{min-height:40px}.ride-request-row{align-items:flex-start;flex-direction:column}.request-actions{width:100%}.request-actions button{flex:1}.ride-requests{min-width:100%}.top-actions .theme-toggle span{display:none}.topbar{gap:6px}.page-content{padding-left:12px;padding-right:12px}.panel{padding:14px}.section-title{flex-wrap:wrap}.ride-card{width:100%}.timetable-item b{overflow-wrap:anywhere}}
+@media(max-width:420px){.topbar{padding:0 10px}.searchbox{width:105px}.top-actions{gap:2px}.welcome-row{gap:8px}.welcome-row h1{overflow-wrap:anywhere}.semester-row{grid-template-columns:1fr}.cgpa-summary strong{font-size:25px}.ride-card>.primary,.ride-card>.secondary{margin-left:0}.event-row-wide{align-items:flex-start;flex-wrap:wrap}}
+
+.dark-mode .field-label select,.dark-mode .field-label textarea,.dark-mode .field-label input,.dark-mode .semester-row input{background:#172337;color:#e7eaf2;border-color:#334155}
+
+/* October update: clearer timetable controls, accessible what-if results, stable ride layout and visible alerts */
+.timetable-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:760px;margin:14px 0 6px}
+.timetable-filters .field-label{font-size:13px;color:#475467}
+.timetable-filters select{width:100%;min-height:44px;border:1px solid #d8deea;border-radius:10px;padding:10px 12px;background:#fff;color:#263246;font-size:14px}
+.timetable-select-panel .muted{font-size:13px}
+.timetable-item{padding:13px 14px;gap:7px}
+.timetable-item strong{font-size:13px}.timetable-item b{font-size:15px;line-height:1.35}.timetable-item small{font-size:12px;line-height:1.4}
+.whatif{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(220px,.8fr);align-items:center;gap:22px}
+.whatif h3{font-size:20px;margin:12px 0 6px}.whatif .muted{font-size:14px;line-height:1.55}
+.whatif-number{margin-top:15px;font-size:14px!important}.whatif-number strong{color:#5147e5;font-size:18px}.whatif-number input[type=range]{width:100%;margin-top:10px;accent-color:#6255e5}
+.whatif-result{display:grid;gap:8px;background:#f2f0ff;border:1px solid #ded9ff;border-radius:14px;padding:20px;color:#4c438f}.whatif-result span{font-size:13px}.whatif-result strong{font-size:28px;color:#5147e5}.whatif-result small{font-size:11px;line-height:1.45;color:#6d6796}
+/* Map and ride offers stay in separate flow sections; the offer form is a viewport-safe modal. */
+.leaflet-map-wrap{position:relative;z-index:0;isolation:isolate;overflow:hidden;border-radius:12px;min-width:0}
+.leaflet-container{z-index:0!important}
+.ride-form{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+.modal-backdrop{z-index:1000;overflow-y:auto;align-items:center}
+.modal{max-height:calc(100dvh - 36px);overflow-y:auto;min-width:0}
+.toast{z-index:2000;max-width:min(440px,calc(100vw - 32px));font-size:14px;line-height:1.4;padding:14px 16px;gap:10px;animation:campusToastIn .18s ease-out}
+.toast span{flex:1;overflow-wrap:anywhere}
+.toast-close{border:0;background:transparent;color:#fff;display:grid;place-items:center;padding:3px;cursor:pointer;opacity:.85}
+.toast-close:hover{opacity:1}
+.admin-error{color:#b42318!important;background:#fff0f0;border:1px solid #ffd4d4;padding:9px 11px;border-radius:8px;font-size:13px}
+.role-gate .field-label{margin:14px 0}
+@keyframes campusToastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:760px){.timetable-filters,.whatif{grid-template-columns:1fr}.ride-form{grid-template-columns:1fr}.modal-backdrop{padding:10px;align-items:start}.modal{max-height:calc(100dvh - 20px);margin:auto 0}.toast{left:12px;right:12px;bottom:12px;max-width:none}.timetable-item b{font-size:14px}}
+
+
+/* Campus360 fixes: visible notifications, functional search, and logo support */
+.brand-mark{position:relative;overflow:hidden;flex:0 0 39px}
+.brand-mark img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;border-radius:inherit;background:#fff;z-index:2}
+.brand-mark .brand-fallback{position:relative;z-index:1}
+.searchbox{gap:7px;flex-shrink:0}
+.search-submit{border:0;background:#eeecff;color:#5147e5;border-radius:6px;display:grid;place-items:center;padding:5px;flex-shrink:0}
+.search-submit:hover{background:#dedaff}
+.notifications-wrap{position:relative;display:flex;align-items:center;z-index:30}
+.notifications-button{min-height:38px;display:flex;align-items:center;justify-content:center;gap:7px;padding:0 10px;border:1px solid #e5e7f0;border-radius:9px;background:#fff;color:#465166;font-size:12px;font-weight:700;white-space:nowrap;position:relative}
+.notifications-button svg{color:#6255e5;flex-shrink:0}
+.notifications-button b{display:grid;place-items:center;min-width:18px;height:18px;padding:0 4px;background:#e5484d;color:#fff;border-radius:999px;font-size:10px}
+.notifications-button:hover{background:#f7f6ff;border-color:#d8d3ff}
+.notifications-popover{position:absolute;top:calc(100% + 10px);right:0;width:min(360px,calc(100vw - 24px));max-height:min(440px,70vh);overflow:auto;background:#fff;color:#243044;border:1px solid #e2e6ef;border-radius:14px;box-shadow:0 18px 50px #18233b2b;padding:12px;z-index:3000}
+.notifications-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 3px 10px;border-bottom:1px solid #edf0f5}
+.notifications-head strong{font-size:14px}
+.notifications-head button,.notifications-close{border:0;background:transparent;color:#5b50e5;font-size:12px;font-weight:700;padding:5px}
+.notification-entry{display:grid;gap:5px;padding:12px 9px;border-bottom:1px solid #edf0f5;font-size:13px;line-height:1.45;overflow-wrap:anywhere}
+.notification-entry.unread{background:#f5f4ff;border-radius:8px}
+.notification-entry small{font-size:10px;color:#8993a4}
+.notifications-empty{font-size:12px;color:#788397;line-height:1.6;padding:12px 4px}
+.notifications-close{display:block;margin:7px 0 0 auto}
+.toast{z-index:5000;position:fixed;right:20px;bottom:20px;left:auto;max-width:min(480px,calc(100vw - 28px));font-size:14px;line-height:1.45;padding:15px 17px;min-height:54px}
+@media(max-width:1050px){.top-actions{gap:7px}.searchbox{width:180px}.notifications-button span{display:none}.notifications-button{width:39px;padding:0}}
+@media(max-width:760px){.top-actions{gap:5px}.searchbox{width:clamp(112px,32vw,165px)}.notifications-button{width:35px;min-height:35px;padding:0}.notifications-popover{position:fixed;top:72px;right:10px}.toast{left:12px;right:12px;bottom:12px;max-width:none}}
+@media(max-width:420px){.searchbox{width:105px}.search-submit{padding:4px}.top-actions{gap:3px}.notifications-button{width:32px;min-height:32px}.user-button{padding:0}}
