@@ -166,15 +166,20 @@ async function verifyDemoOtp(e) {
   setAuthError('');
 
   try {
-    const digits = authPhone.replace(/\D/g, '');
-    const response = await fetch('/api/auth/verify-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        phone: `+91${digits}`,
-        code: authOtp,
-      }),
-    });
+   const digits = authPhone.replace(/\D/g, '');
+const normalizedPhone = `+91${digits}`; // <-- Add this line!
+
+const response = await fetch('https://api.minimoth.dev/v1/otp/verify', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Api-Key': 'mm_live_350a16861e7fb54185d79a297f5b0ca72f6e4d3a43ec0d2b5314d2744cb4de3ed0d569df02f3795d44bc2879c09bb888',
+  },
+  body: JSON.stringify({
+    phone: normalizedPhone,
+    code: authOtp,
+  }),
+});
 
     const data = await response.json();
 
