@@ -60,4 +60,10 @@ app.get('/api/events', async (_req, res) => {
   res.json({ data });
 });
 
-app.listen(port, () => console.log(`Campus360 backend running at http://localhost:${port}`));
+export default app;
+
+if (!process.env.VERCEL) {
+  app.listen(port, () => {
+    console.log(`Campus360 backend running at http://localhost:${port}`);
+  });
+}
