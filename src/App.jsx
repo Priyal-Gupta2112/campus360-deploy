@@ -80,6 +80,10 @@ function App() {
   const [authOtp, setAuthOtp] = useState('')
   const [authOtpSent, setAuthOtpSent] = useState(false)
   const [authName, setAuthName] = useState('')
+  const [authYear, setAuthYear] = useState('')
+  const [authBranch, setAuthBranch] = useState('')
+  const [authBatch, setAuthBatch] = useState('')
+  const [authRollNo, setAuthRollNo] = useState('')
   const [authError, setAuthError] = useState('')
 
   useEffect(() => {
@@ -243,6 +247,10 @@ function App() {
       setAuthError('Enter your name to create a profile.');
       return;
     }
+    if (authMode === 'signup' && (!authYear || !authBranch.trim() || !authBatch || !authRollNo.trim())) {
+      setAuthError('Please complete your year, branch, batch, and roll number.');
+      return;
+    }
 
     setAuthError('');
 
@@ -266,7 +274,12 @@ function App() {
       }
 
       if (authMode === 'signup') {
-        setProfile(p => ({ ...p, name: authName.trim() }));
+        const studentDetails = {
+          name: authName.trim(), year: authYear, branch: authBranch.trim(),
+          batch: authBatch, rollNo: authRollNo.trim(), phone: `+91${digits}`,
+        };
+        setProfile(p => ({ ...p, ...studentDetails }));
+        try { localStorage.setItem('c360_student_details', JSON.stringify(studentDetails)); } catch {}
       }
 
       try {
@@ -289,7 +302,23 @@ function App() {
       <section className="auth-card"><div className="auth-card-top"><div className="auth-icon"><ShieldCheck size={22}/></div><span className="secure-label"><LockKeyhole size={12}/> Student access</span></div>
         <h2>{authMode === 'login' ? 'Welcome back' : 'Create your account'}</h2><p className="auth-subtitle">{authMode === 'login' ? 'Sign in with your phone number to continue.' : 'Join Campus360 and make your first year count.'}</p>
         <div className="auth-tabs"><button className={authMode === 'login' ? 'active' : ''} onClick={() => { setAuthMode('login'); setAuthOtpSent(false); setAuthError('') }}>Login</button><button className={authMode === 'signup' ? 'active' : ''} onClick={() => { setAuthMode('signup'); setAuthOtpSent(false); setAuthError('') }}>Sign Up</button></div>
-        {authMode === 'signup' && <label className="auth-label">Full name<input value={authName} onChange={e => setAuthName(e.target.value)} placeholder="Enter your full name" autoComplete="name"/></label>}
+        {authMode === 'signup' && !authOtpSent && <div className="signup-fields">
+          <label className="auth-label">Full name<input value={authName} onChange={e => setAuthName(e.target.value)} placeholder="Enter your full name" autoComplete="name" required /></label>
+          <div className="signup-fields-grid">
+            <label className="auth-label">Academic year
+              <select className="auth-select" value={authYear} onChange={e => setAuthYear(e.target.value)} required>
+                <option value="" disabled>Select year</option><option value="1st Year">1st Year</option><option value="2nd Year">2nd Year</option><option value="3rd Year">3rd Year</option><option value="4th Year">4th Year</option>
+              </select>
+            </label>
+            <label className="auth-label">Batch
+              <select className="auth-select" value={authBatch} onChange={e => setAuthBatch(e.target.value)} required>
+                <option value="" disabled>Select batch</option><option value="1">Batch 1</option><option value="2">Batch 2</option>
+              </select>
+            </label>
+            <label className="auth-label">Branch<input value={authBranch} onChange={e => setAuthBranch(e.target.value)} placeholder="Enter your branch" required /></label>
+            <label className="auth-label">Roll number<input value={authRollNo} onChange={e => setAuthRollNo(e.target.value)} placeholder="Enter your roll no." required /></label>
+          </div>
+        </div>}
         <form onSubmit={authOtpSent ? verifyOtp : sendOtp} className="auth-form">
           <label className="auth-label">Phone number<div className="phone-input"><span>+91</span><input value={authPhone} onChange={e => { setAuthPhone(e.target.value); setAuthError('') }} placeholder="10-digit mobile number" inputMode="numeric" autoComplete="tel-national" maxLength={10} required disabled={authOtpSent}/></div></label>
           {authOtpSent && <label className="auth-label">One-time password (OTP)<input value={authOtp} onChange={e => { setAuthOtp(e.target.value); setAuthError('') }} placeholder="Enter 6-digit OTP" inputMode="numeric" maxLength={6} required/>
