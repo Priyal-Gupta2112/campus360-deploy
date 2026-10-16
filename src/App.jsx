@@ -117,38 +117,87 @@ function App() {
   function updateSubject(id, key, value) { setSubjects(old => old.map(s => s.id === id ? { ...s, [key]: Number(value) } : s)) }
   
 async function sendDemoOtp(e) {
-  e.preventDefault();
+    e.preventDefault();
 
-  const digits = authPhone.replace(/\D/g, '');
-  if (digits.length !== 10) {
-    setAuthError('Enter a valid 10-digit phone number.');
-    return;
-  }
-
-  setAuthError('');
-
-  try {
-    const response = await fetch('https://api.minimoth.dev/v1/otp/verify', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'X-Api-Key': 'mm_live_350a16861e7fb54185d79a297f5b0ca72f6e4d3a43ec0d2b5314d2744cb4de3ed0d569df02f3795d44bc2879c09bb888', // Paste your real MiniMoth key
-  },
-  body: JSON.stringify({ phone: normalizedPhone }),
-});
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || 'Could not send OTP.');
+    const digits = authPhone.replace(/\D/g, '');
+    if (digits.length !== 10) {
+      setAuthError('Enter a valid 10-digit phone number.');
+      return;
     }
 
-    setAuthOtpSent(true);
-    notify(data.message || 'OTP request accepted.');
-  } catch (error) {
-    setAuthError(error.message || 'Unable to send OTP. Check the backend.');
+    const normalizedPhone = `+91${digits}`;
+    setAuthError('');
+
+    try {
+      const response = await fetch('https://api.minimoth.dev/v1/otp/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Api-Key': 'mm_live_350a16861e7fb54185d79a297f5b0ca72f6e4d3a43ec0d2b5314d2744cb4de3ed0d569df02f3795d44bc2879c09bb888',
+        },
+        body: JSON.stringify({ phone: normalizedPhone }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Could not send OTP.');
+      }
+
+      setAuthOtpSent(true);
+      notify(data.message || 'OTP request accepted.');
+    } catch (error) {
+      setAuthError(error.message || 'Unable to send OTP. Check the backend.');
+    }
   }
-}
+
+  async function verifyDemoOtp(e) {
+    e.preventDefault();
+
+    if (!/^\d{6}$/.test(authOtp)) {
+      setAuthError('Enter the six-digit OTP.');
+      return;
+    }
+
+    if (authMode === 'signup' && !authName.trim()) {
+      setAuthError('Enter your name to create a profile.');
+      return;
+    }
+
+    const digits = authPhone.replace(/\D/g, '');
+    const normalizedPhone = `+91${digits}`;
+    setAuthError('');
+
+    try {
+      const response = await fetch('https://api.minimoth.dev/v1/otp/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Api-Key': 'mm_live_350a16861e7fb54185d79a297f5b0ca72f6e4d3a43ec0d2b5314d2744cb4de3ed0d569df02f3795d44bc2879c09bb888',
+        },
+        body: JSON.stringify({
+          phone: normalizedPhone,
+          code: authOtp,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'OTP verification failed.');
+      }
+
+      if (authMode === 'signup') {
+        setProfile(p => ({ ...p, name: authName.trim() }));
+      }
+
+      setLoggedIn(true);
+      setAuthError('');
+      notify('OTP verified successfully.');
+    } catch (error) {
+      setAuthError(error.message || 'Unable to verify OTP.');
+    }
+  }
 
 async function verifyDemoOtp(e) {
   e.preventDefault();
