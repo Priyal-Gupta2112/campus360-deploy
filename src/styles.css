@@ -2108,3 +2108,108 @@ body.dark-mode .auth-warning { background: rgb(255 255 255 / .035); }
   .auth-submit { min-height: 50px; }
   .auth-divider { margin-top: 20px; }
 }
+
+/* ==========================================================================
+   CAMPUS360 AUTH BRAND + FOOTER ALIGNMENT
+   Visual-only refinements for the login/register screen.
+   ========================================================================== */
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: fit-content;
+  max-width: calc(100% - 150px);
+  position: relative;
+  z-index: 2;
+  padding: 6px 0;
+}
+.auth-brand .brand-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 62px;
+  width: 62px;
+  height: 62px;
+  overflow: hidden;
+  border-radius: 17px;
+  background: #fff;
+  border: 1px solid rgb(148 163 184 / .2);
+  box-shadow: 0 8px 22px rgb(15 23 42 / .1);
+}
+.auth-brand .brand-mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 5px;
+}
+.auth-brand .brand-mark .brand-fallback {
+  width: 34px;
+  height: 34px;
+  color: #5b50f0;
+}
+.auth-brand > div:last-child {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 0;
+  gap: 3px;
+}
+.auth-brand > div:last-child b {
+  display: block;
+  color: var(--text-main);
+  font-family: var(--font-heading);
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: -.045em;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.auth-brand > div:last-child b span {
+  color: var(--primary);
+}
+.auth-brand > div:last-child small {
+  display: block;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .105em;
+  line-height: 1.4;
+}
+.auth-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  width: 100%;
+  padding: 16px 4px 2px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.auth-bottom > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.auth-bottom > span:last-child svg {
+  display: block;
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+}
+body.dark-mode .auth-brand .brand-mark {
+  background: #fff;
+  border-color: rgb(148 163 184 / .28);
+}
+@media (max-width: 600px) {
+  .auth-page { padding: 16px 18px; }
+  .auth-brand { gap: 10px; max-width: calc(100% - 112px); }
+  .auth-brand .brand-mark { flex-basis: 48px; width: 48px; height: 48px; border-radius: 13px; }
+  .auth-brand > div:last-child b { font-size: 20px; }
+  .auth-brand > div:last-child small { font-size: 8px; letter-spacing: .07em; }
+  .auth-bottom { align-items: flex-start; flex-direction: column; gap: 8px; }
+}
