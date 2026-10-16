@@ -2602,3 +2602,103 @@ body.dark-mode .auth-card .signup-fields .auth-select option { color: #e5e7eb; b
 .auth-card .signup-fields .custom-select-option.selected { color: var(--primary, #635bdb); font-weight: 600; }
 body.dark-mode .auth-card .signup-fields .custom-select-menu { background: var(--bg-surface, #111a2e); border-color: var(--border-base, #344054); box-shadow: 0 12px 30px rgb(0 0 0 / .32); }
 @keyframes customSelectIn { from { opacity: 0; transform: translateY(-4px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+
+
+/* Rounded custom dropdowns for the timetable */
+.timetable-filters .custom-select-wrap {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.timetable-filters .custom-select-trigger {
+  appearance: none;
+  -webkit-appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  border: 1px solid var(--border-base, #dbe2ea);
+  border-radius: 16px;
+  background: var(--bg-surface, #fff);
+  color: var(--text-main, #172033);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.timetable-filters .custom-select-trigger:hover {
+  border-color: #a5a0f5;
+}
+
+.timetable-filters .custom-select-wrap.is-open .custom-select-trigger,
+.timetable-filters .custom-select-trigger:focus-visible {
+  border-color: var(--primary, #7562e8);
+  box-shadow: 0 0 0 4px rgb(99 102 241 / 12%);
+  outline: none;
+}
+
+.timetable-filters .custom-select-chevron {
+  flex-shrink: 0;
+  color: #6b7280;
+  transform: rotate(90deg);
+  transition: transform 0.18s ease;
+}
+
+.timetable-filters .custom-select-wrap.is-open .custom-select-chevron {
+  transform: rotate(-90deg);
+}
+
+.timetable-filters .custom-select-menu {
+  position: absolute;
+  z-index: 1000;
+  top: calc(100% + 7px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--border-base, #dbe2ea);
+  border-radius: 18px;
+  background: var(--bg-surface, #fff);
+  box-shadow: 0 12px 30px rgb(31 41 55 / 14%);
+  animation: customSelectIn 0.14s ease-out;
+}
+
+.timetable-filters .custom-select-option {
+  display: block;
+  width: 100%;
+  padding: 11px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-main, #172033);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.timetable-filters .custom-select-option:hover,
+.timetable-filters .custom-select-option.active {
+  background: rgb(99 102 241 / 9%);
+}
+
+.timetable-filters .custom-select-option.selected {
+  color: var(--primary, #635bdb);
+  font-weight: 600;
+}
+
+body.dark-mode .timetable-filters .custom-select-menu {
+  background: var(--bg-surface, #111a2e);
+  border-color: var(--border-base, #344054);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 32%);
+}
+
