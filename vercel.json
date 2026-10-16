@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/minimoth/:path*",
+      "destination": "https://api.minimoth.dev/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
