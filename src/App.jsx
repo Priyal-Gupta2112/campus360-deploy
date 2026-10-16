@@ -3,13 +3,14 @@ import {
   Activity, ArrowDownRight, ArrowRight, Award, BookOpen, CalendarDays, Check,
   ChevronRight, CircleHelp, Clock3, GraduationCap, LayoutDashboard, MapPin,
   Menu, Plus, Search, ShieldCheck, Sparkles, Users, WalletCards, X, Bike,
-Bell, LogOut, LockKeyhole, Target, Trophy, Moon, Sun
+  Bell, LogOut, LockKeyhole, Target, Trophy, Moon, Sun
 } from 'lucide-react'
 import { contacts, events, gradeScale, initialChallenges, initialRides, initialSubjects } from './data'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import * as XLSX from 'xlsx'
+
 const getInitialTheme = () => {
   try {
     return localStorage.getItem('campus360-theme') || 'light'
@@ -17,14 +18,17 @@ const getInitialTheme = () => {
     return 'light'
   }
 }
+
 const nav = [
   ['Dashboard', LayoutDashboard], ['Academic Planner', GraduationCap], ['Timetable', CalendarDays], ['Rides', Bike],
   ['Challenges', Trophy], ['Campus Guide', MapPin], ['Campus Pulse', CalendarDays], ['SkillSwap', Users],
 ]
+
 const read = (key, fallback) => {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback } catch { return fallback }
 }
 const save = (key, value) => localStorage.setItem(key, JSON.stringify(value))
+
 function Badge({ children, tone = 'slate' }) { return <span className={`badge ${tone}`}>{children}</span> }
 function Stat({ label, value, hint, icon: Icon }) { return <div className="stat"><div className="stat-top"><span>{label}</span><span className="icon-box"><Icon size={18}/></span></div><strong>{value}</strong><small>{hint}</small></div> }
 function SectionTitle({ title, sub, action }) { return <div className="section-title"><div><h2>{title}</h2>{sub && <p>{sub}</p>}</div>{action}</div> }
@@ -38,7 +42,17 @@ function App() {
   const [challenges, setChallenges] = useState(() => read('c360_challenges', initialChallenges))
   const [eventsList, setEventsList] = useState(() => read('c360_events', events))
   const [profile, setProfile] = useState(() => read('c360_profile', { name: 'Alex Student', interests: 'Technology, Design', subjects: 'Programming, Mathematics' }))
-  const [loggedIn, setLoggedIn] = useState(false)
+
+  // Always logged in on localhost; on live server, preserve session across page refreshes
+  const [loggedIn, setLoggedIn] = useState(() => {
+    if (import.meta.env.DEV) return true;
+    try {
+      return localStorage.getItem('c360_logged_in') === 'true';
+    } catch {
+      return false;
+    }
+  })
+
   const [showLogin, setShowLogin] = useState(false)
   const [notice, setNotice] = useState('')
   const [notifications, setNotifications] = useState(() => read('c360_notifications', []))
@@ -66,15 +80,25 @@ function App() {
   const [authOtpSent, setAuthOtpSent] = useState(false)
   const [authName, setAuthName] = useState('')
   const [authError, setAuthError] = useState('')
+
   useEffect(() => {
     document.body.classList.toggle('dark-mode', theme === 'dark')
     try { localStorage.setItem('campus360-theme', theme) } catch {}
   }, [theme])
+
+  // Sync login state to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('c360_logged_in', String(loggedIn))
+    } catch {}
+  }, [loggedIn])
+
   useEffect(() => save('c360_subjects', subjects), [subjects])
   useEffect(() => save('c360_rides', rides), [rides])
   useEffect(() => save('c360_challenges', challenges), [challenges])
   useEffect(() => save('c360_events', eventsList), [eventsList])
   useEffect(() => save('c360_assignments', assignments), [assignments])
+
   useEffect(() => {
     const now = new Date();
     const horizon = 48 * 60 * 60 * 1000;
@@ -89,8 +113,10 @@ function App() {
       try { localStorage.setItem('c360_seen_alerts', JSON.stringify([...seen, ...unseen])) } catch {}
     }
   }, [assignments, eventsList])
+
   useEffect(() => save('c360_skills', skills), [skills])
   useEffect(() => save('c360_timetable', timetable), [timetable])
+
   useEffect(() => {
     const handleChallengeCreate = (event) => {
       setChallenges(old => [event.detail, ...old]);
@@ -99,7 +125,9 @@ function App() {
     window.addEventListener('campus360-challenge-create', handleChallengeCreate);
     return () => window.removeEventListener('campus360-challenge-create', handleChallengeCreate);
   }, [])
+
   useEffect(() => save('c360_profile', profile), [profile])
+
   const points = challenges.filter(c => c.done).reduce((n,c) => n + c.points, 0)
   const marksRows = useMemo(() => subjects.map(s => {
     const needed = s.cutoff - s.internal
@@ -109,24 +137,43 @@ function App() {
   }), [subjects])
   const totalCredits = subjects.reduce((a,s) => a + Number(s.credits || 0), 0)
   const targetReachable = subjects.every(s => s.internal + 100 >= s.cutoff && s.internal + 100 >= s.pass)
+
   function notify(message) {
     const item = { id: Date.now() + Math.random(), message: String(message), time: new Date().toISOString(), read: false }
     setNotifications(old => [item, ...old].slice(0, 30))
     setNotice(String(message))
     window.setTimeout(() => setNotice(current => current === String(message) ? '' : current), 4500)
   }
+
   useEffect(() => save('c360_notifications', notifications), [notifications])
+
   function navigate(name) { setPage(name); setMobileNav(false) }
   function runCampusSearch() { navigate('Campus Guide'); if (!search.trim()) notify('Campus directory opened. Type a place, club, or service to search.'); else notify(`Searching campus directory for “${search.trim()}”.`) }
   const unreadNotifications = notifications.filter(n => !n.read).length
+
+  function handleLogout() {
+    try {
+      localStorage.removeItem('c360_logged_in');
+    } catch {}
+    setLoggedIn(false);
+    setLogoutConfirm(false);
+    setShowLogin(false);
+    setAuthOtpSent(false);
+    setAuthOtp('');
+    setAuthError('');
+    notify('Logged out successfully.');
+  }
+
   function requestRide(id) {
     setRides(old => old.map(r => r.id === id ? { ...r, requests: [...(r.requests || []), { id: Date.now(), requester: profile.name, status: 'Pending' }] } : r))
     notify('Ride request sent. The provider can accept or reject it.')
   }
+
   function updateRideRequest(rideId, requestId, status) {
     setRides(old => old.map(r => r.id !== rideId ? r : { ...r, requests: (r.requests || []).map(q => q.id === requestId ? { ...q, status } : q) }))
     notify(`Ride request ${status.toLowerCase()}.`)
   }
+
   function addRide(e) {
     e.preventDefault()
     if (!newRide.from.trim() || !newRide.to.trim() || !newRide.time.trim()) return notify('Enter pickup point, destination and time.')
@@ -134,6 +181,7 @@ function App() {
     setNewRide({ from: '', to: 'Campus Main Gate', time: '', seats: 2, vehicleType: 'Car', paymentMode: 'Pay before ride', fare: '' })
     notify('Your ride is now listed.')
   }
+
   function addChallenge(e) {
     e.preventDefault()
     if (!newChallenge.trim()) return
@@ -141,93 +189,97 @@ function App() {
     setNewChallenge('')
     notify('Challenge posted.')
   }
+
   function toggleChallenge(id) {
     setChallenges(old => old.map(c => c.id === id ? { ...c, done: !c.done } : c))
     notify('Challenge status updated.')
   }
+
   function updateSubject(id, key, value) { setSubjects(old => old.map(s => s.id === id ? { ...s, [key]: Number(value) } : s)) }
-  
-async function sendOtp(e) {
-  e.preventDefault();
 
-  const digits = authPhone.replace(/\D/g, '');
-  if (digits.length !== 10) {
-    setAuthError('Enter a valid 10-digit phone number.');
-    return;
-  }
+  async function sendOtp(e) {
+    e.preventDefault();
 
-  setAuthError('');
-
-  try {
-    const response = await fetch('/api/auth/send-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: `+91${digits}` }),
-    });
-
-    const raw = await response.text();
-    let data = {};
-    try { data = raw ? JSON.parse(raw) : {}; } catch { data = { error: raw || 'Server returned an unreadable response.' }; }
-
-    if (!response.ok) {
-      throw new Error(data.error || 'Could not send OTP.');
-    }
-
-    setAuthOtpSent(true);
-    notify(data.message || 'OTP request accepted.');
-  } catch (error) {
-    setAuthError(error.message || 'Unable to send OTP. Check the backend.');
-  }
-}
-
-async function verifyOtp(e) {
-  e.preventDefault();
-
-  if (!/^\d{6}$/.test(authOtp)) {
-    setAuthError('Enter the six-digit OTP.');
-    return;
-  }
-
-  if (authMode === 'signup' && !authName.trim()) {
-    setAuthError('Enter your name to create a profile.');
-    return;
-  }
-
-  setAuthError('');
-
-  try {
     const digits = authPhone.replace(/\D/g, '');
-    const response = await fetch('/api/auth/verify-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        phone: `+91${digits}`,
-        code: authOtp,
-      }),
-    });
-
-    const raw = await response.text();
-    let data = {};
-    try { data = raw ? JSON.parse(raw) : {}; } catch { data = { error: raw || 'Server returned an unreadable response.' }; }
-
-    if (!response.ok) {
-      throw new Error(data.error || 'OTP verification failed.');
+    if (digits.length !== 10) {
+      setAuthError('Enter a valid 10-digit phone number.');
+      return;
     }
 
-    if (authMode === 'signup') {
-      setProfile(p => ({ ...p, name: authName.trim() }));
-    }
-
-    setLoggedIn(true);
     setAuthError('');
-    notify('OTP verified successfully.');
-  } catch (error) {
-    setAuthError(error.message || 'Unable to verify OTP.');
+
+    try {
+      const response = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: `+91${digits}` }),
+      });
+
+      const raw = await response.text();
+      let data = {};
+      try { data = raw ? JSON.parse(raw) : {}; } catch { data = { error: raw || 'Server returned an unreadable response.' }; }
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Could not send OTP.');
+      }
+
+      setAuthOtpSent(true);
+      notify(data.message || 'OTP request accepted.');
+    } catch (error) {
+      setAuthError(error.message || 'Unable to send OTP. Check the backend.');
+    }
   }
-}
 
+  async function verifyOtp(e) {
+    e.preventDefault();
 
-  // TEMPORARY HACKATHON MODE: bypass OTP login so the app is accessible without MiniMoth credentials.
+    if (!/^\d{6}$/.test(authOtp)) {
+      setAuthError('Enter the six-digit OTP.');
+      return;
+    }
+
+    if (authMode === 'signup' && !authName.trim()) {
+      setAuthError('Enter your name to create a profile.');
+      return;
+    }
+
+    setAuthError('');
+
+    try {
+      const digits = authPhone.replace(/\D/g, '');
+      const response = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: `+91${digits}`,
+          code: authOtp,
+        }),
+      });
+
+      const raw = await response.text();
+      let data = {};
+      try { data = raw ? JSON.parse(raw) : {}; } catch { data = { error: raw || 'Server returned an unreadable response.' }; }
+
+      if (!response.ok) {
+        throw new Error(data.error || 'OTP verification failed.');
+      }
+
+      if (authMode === 'signup') {
+        setProfile(p => ({ ...p, name: authName.trim() }));
+      }
+
+      try {
+        localStorage.setItem('c360_logged_in', 'true');
+      } catch {}
+
+      setLoggedIn(true);
+      setAuthError('');
+      notify('OTP verified successfully.');
+    } catch (error) {
+      setAuthError(error.message || 'Unable to verify OTP.');
+    }
+  }
+
   if (!loggedIn) return <div className="auth-page">
     <div className="auth-decoration auth-decoration-one"/><div className="auth-decoration auth-decoration-two"/>
     <div className="auth-brand"><div className="brand-mark"><img src="/logo.png" alt="Campus360 logo" onLoad={e => { const fallback = e.currentTarget.nextElementSibling; if (fallback) fallback.style.display = 'none' }} onError={e => { e.currentTarget.style.display = 'none' }}/><Sparkles className="brand-fallback" size={22}/></div><div><b>Campus<span>360</span></b><small>YOUR COLLEGE COMPANION</small></div></div><button type="button" className="theme-toggle auth-theme-toggle" onClick={() => setTheme(current => current === 'dark' ? 'light' : 'dark')} aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>{theme === 'dark' ? <Sun size={18}/> : <Moon size={18}/>}<span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span></button>
@@ -277,9 +329,9 @@ async function verifyOtp(e) {
       </div>
       <footer className="footer"><span>Campus360 · Built for first-year life</span><span><span className="pulse-dot"/> Demo environment · Sample data</span></footer>
     </main>
-    {logoutConfirm && <div className="modal-backdrop" onClick={() => setLogoutConfirm(false)}><div className="modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}><div className="modal-head"><div className="icon-box purple"><LogOut size={20}/></div><button className="icon-button" onClick={() => setLogoutConfirm(false)}><X size={18}/></button></div><h2>Log out of Campus360?</h2><p className="muted">Your locally saved timetable, assignments and preferences will remain on this device.</p><div className="modal-actions"><button className="secondary" onClick={() => setLogoutConfirm(false)}>Stay signed in</button><button className="primary" onClick={() => { setLogoutConfirm(false); setLoggedIn(false); setAuthOtpSent(false); setAuthOtp(''); setAuthError(''); }}>Log out</button></div></div></div>}
+    {logoutConfirm && <div className="modal-backdrop" onClick={() => setLogoutConfirm(false)}><div className="modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}><div className="modal-head"><div className="icon-box purple"><LogOut size={20}/></div><button className="icon-button" onClick={() => setLogoutConfirm(false)}><X size={18}/></button></div><h2>Log out of Campus360?</h2><p className="muted">Your locally saved timetable, assignments and preferences will remain on this device.</p><div className="modal-actions"><button className="secondary" onClick={() => setLogoutConfirm(false)}>Stay signed in</button><button className="primary" onClick={handleLogout}>Log out</button></div></div></div>}
     {showLogin && <div className="modal-backdrop" onClick={() => setShowLogin(false)}>
-      <div className="modal" onClick={e => e.stopPropagation()}><div className="modal-head"><div className="icon-box purple"><LockKeyhole size={20}/></div><button className="icon-button" onClick={() => setShowLogin(false)}><X size={18}/></button></div><h2>{loggedIn ? 'Demo account' : 'Welcome to Campus360'}</h2><p className="muted">Sign in with your phone number. We’ll verify it using a one-time code.</p><label className="field-label">Student display name<input value={profile.name} onChange={e => setProfile(p => ({ ...p, name: e.target.value }))}/></label><label className="field-label">Interests<input value={profile.interests} onChange={e => setProfile(p => ({ ...p, interests: e.target.value }))}/></label><label className="field-label">Subjects<input value={profile.subjects} onChange={e => setProfile(p => ({ ...p, subjects: e.target.value }))}/></label><button className="primary full" onClick={() => { setLoggedIn(!loggedIn); setShowLogin(false); notify(loggedIn ? 'Session ended.' : 'Profile saved.') }}>{loggedIn ? <><LogOut size={16}/> End demo session</> : <><ShieldCheck size={16}/> Continue in demo mode</>}</button><small className="warning-note">Phone verification is handled by the Campus360 server. Never share your OTP with anyone.</small></div></div>}
+      <div className="modal" onClick={e => e.stopPropagation()}><div className="modal-head"><div className="icon-box purple"><LockKeyhole size={20}/></div><button className="icon-button" onClick={() => setShowLogin(false)}><X size={18}/></button></div><h2>{loggedIn ? 'Demo account' : 'Welcome to Campus360'}</h2><p className="muted">Sign in with your phone number. We’ll verify it using a one-time code.</p><label className="field-label">Student display name<input value={profile.name} onChange={e => setProfile(p => ({ ...p, name: e.target.value }))}/></label><label className="field-label">Interests<input value={profile.interests} onChange={e => setProfile(p => ({ ...p, interests: e.target.value }))}/></label><label className="field-label">Subjects<input value={profile.subjects} onChange={e => setProfile(p => ({ ...p, subjects: e.target.value }))}/></label><button className="primary full" onClick={() => { if (loggedIn) { handleLogout(); } else { setLoggedIn(true); setShowLogin(false); notify('Demo profile saved.'); } }}>{loggedIn ? <><LogOut size={16}/> End demo session</> : <><ShieldCheck size={16}/> Continue in demo mode</>}</button><small className="warning-note">Phone verification is handled by the Campus360 server. Never share your OTP with anyone.</small></div></div>}
     {notice && <div className="toast" role="status" aria-live="polite"><Check size={17}/><span>{notice}</span><button type="button" className="toast-close" onClick={()=>setNotice('')} aria-label="Dismiss notification"><X size={15}/></button></div>}
   </div>
 }
@@ -347,7 +399,6 @@ function Rides({ rides, requestRide, updateRideRequest, profile, newRide, setNew
   </div>
 }
 
-
 function Timetable({ timetable, setTimetable, notify }) {
   const [fileName, setFileName] = useState('');
   const [selectedClass, setSelectedClass] = useState('All');
@@ -396,7 +447,6 @@ function Timetable({ timetable, setTimetable, notify }) {
             className: classI >= 0 ? clean(row[classI]) : '', division: divI >= 0 ? clean(row[divI]) : ''
           })).filter(r => r.day && r.subject);
         }
-        // Matrix-style timetable: one row per time, weekday names are column headers.
         if (!parsed.length) {
           const header = matrix[headerIndex] || [];
           const dayColumns = header.map((cell, i) => ({ day: dayName(cell), i })).filter(x => x.day);
@@ -410,7 +460,6 @@ function Timetable({ timetable, setTimetable, notify }) {
           }
         }
       }
-      // Common timetable matrix without a dedicated header row: time column plus weekday columns.
       if (!parsed.length) {
         const rowWithDays = matrix.findIndex(row => row.map(dayName).filter(Boolean).length >= 2);
         if (rowWithDays >= 0) {
@@ -424,7 +473,6 @@ function Timetable({ timetable, setTimetable, notify }) {
         }
       }
       if (!parsed.length) throw new Error('Could not detect a timetable. Use a table with Day + Subject columns, or a weekly grid with weekday names across the top.');
-      // If class/division columns are absent, preserve divisions embedded in subject cells and offer an All option.
       parsed = parsed.map((r, i) => ({ ...r, id: r.id ?? i, className: r.className || 'All classes', division: r.division || 'All divisions' }));
       setRows(parsed); save('c360_timetable_rows', parsed);
       setSelectedClass([...new Set(parsed.map(r => r.className))][0] || 'All'); setSelectedDivision('All');
@@ -450,7 +498,7 @@ function Challenges({ challenges, points, newChallenge, setNewChallenge, addChal
   const [adminError, setAdminError] = useState('')
   const canPost = ['Cultural Representative','Class Representative','Club Admin'].includes(role)
   const ranking = [{name:'Aarav M.',points:180},{name:'You',points},{name:'Sana K.',points:115}].sort((a,b)=>b.points-a.points)
-  function submitChallenge(e) { e.preventDefault(); if(!canPost) return; const item={id:Date.now(),title:form.title.trim(),description:form.description.trim(),className:form.className,points:Number(form.points),contact:form.contact.trim(),category:form.category,done:false,status:'Pending approval',createdBy:role}; addChallenge({preventDefault(){}}); /* parent callback is retained for compatibility */ setNewChallenge(form.title.trim()); const event = new Event('submit'); void event; window.dispatchEvent(new CustomEvent('campus360-challenge-create',{detail:item})); setShowPost(false); setForm({title:'',description:'',className:'All VESIT students',points:25,contact:'',category:'Community'}); }
+  function submitChallenge(e) { e.preventDefault(); if(!canPost) return; const item={id:Date.now(),title:form.title.trim(),description:form.description.trim(),className:form.className,points:Number(form.points),contact:form.contact.trim(),category:form.category,done:false,status:'Pending approval',createdBy:role}; addChallenge({preventDefault(){}}); setNewChallenge(form.title.trim()); const event = new Event('submit'); void event; window.dispatchEvent(new CustomEvent('campus360-challenge-create',{detail:item})); setShowPost(false); setForm({title:'',description:'',className:'All VESIT students',points:25,contact:'',category:'Community'}); }
   return <div className="page-stack"><div className="welcome-row"><div><div className="eyebrow"><Trophy size={14}/> CAMPUS COMMUNITY</div><h1>Challenges that bring us together.</h1><p className="muted">Join campus activities, help your peers and earn points.</p></div><Badge tone="purple"><Trophy size={15}/> {points} points earned</Badge></div>
     <section className="panel"><SectionTitle title="Challenge board" sub="Open a challenge to read the details. New posts require a representative role." action={<button className="primary" onClick={()=>setShowPost(true)}><Plus size={15}/> Post challenge</button>}/><div className="challenge-role-row"><label className="field-label">Prototype role preview<select value={role} onChange={e=>{setRole(e.target.value);save('c360_demo_role',e.target.value)}}><option>Student</option><option>Class Representative</option><option>Cultural Representative</option><option>Club Admin</option></select></label><p className="muted">Role selector is for demonstration only; production must verify roles server-side.</p></div><div className="challenge-list">{challenges.map(c=><div className={`challenge-row ${c.done?'completed':''}`} key={c.id}><button className={`check-circle ${c.done?'checked':''}`} onClick={()=>toggleChallenge(c.id)} aria-label={c.done?'Mark incomplete':'Complete challenge'}>{c.done&&<Check size={16}/>}</button><div className="challenge-info"><b>{c.title}</b><small>{c.className || 'All VESIT students'} · {c.category || 'Community'}</small></div><Badge tone={c.done?'green':c.status==='Pending approval'?'amber':'purple'}>{c.done?'Completed':c.status || 'Open'}</Badge><strong className="points">+{c.points} pts</strong><button className="secondary compact" onClick={()=>setDetailChallenge(c)}>View challenge</button></div>)}</div></section>
     <section className="panel"><SectionTitle title="Class leaderboard" sub="Sample points for demonstration."/><div className="leaderboard">{ranking.map((r,i)=><div className="leader-row" key={r.name}><div className={`rank rank-${i+1}`}>{i+1}</div><div className="avatar small">{r.name.split(' ').map(x=>x[0]).join('')}</div><b>{r.name}</b>{r.name==='You'&&<Badge tone="purple">You</Badge>}<strong>{r.points} pts</strong></div>)}</div></section>
