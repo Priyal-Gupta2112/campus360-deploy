@@ -2588,3 +2588,17 @@ body.dark-mode .auth-card .signup-fields .auth-select option { color: #e5e7eb; b
 @media (max-width: 560px) {
   .signup-fields-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
 }
+
+
+/* Fully custom, rounded signup dropdown menus */
+.auth-card .signup-fields .custom-select-wrap { position: relative; width: 100%; min-width: 0; }
+.auth-card .signup-fields .custom-select-trigger { appearance: none; -webkit-appearance: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-width: 0; min-height: 48px; padding: 12px 15px 12px 18px; border: 1px solid var(--border-base, #dbe2ea); border-radius: 18px; background: var(--bg-surface, #fff); color: var(--text-main, #172033); font: inherit; font-size: 14px; line-height: 1.4; text-align: left; cursor: pointer; transition: border-color .18s ease, box-shadow .18s ease, border-radius .18s ease; }
+.auth-card .signup-fields .custom-select-wrap.is-open .custom-select-trigger, .auth-card .signup-fields .custom-select-trigger:focus-visible { border-color: var(--primary, #7562e8); box-shadow: 0 0 0 4px rgb(99 102 241 / .12); outline: none; }
+.auth-card .signup-fields .custom-select-chevron { flex: 0 0 auto; color: #6b7280; transform: rotate(90deg); transition: transform .18s ease; }
+.auth-card .signup-fields .custom-select-wrap.is-open .custom-select-chevron { transform: rotate(-90deg); }
+.auth-card .signup-fields .custom-select-menu { position: absolute; z-index: 100; top: calc(100% + 7px); left: 0; right: 0; padding: 6px; border: 1px solid var(--border-base, #dbe2ea); border-radius: 18px; background: var(--bg-surface, #fff); box-shadow: 0 12px 30px rgb(31 41 55 / .14); overflow: hidden; animation: customSelectIn .14s ease-out; }
+.auth-card .signup-fields .custom-select-option { display: block; width: 100%; padding: 10px 12px; border: 0; border-radius: 12px; background: transparent; color: var(--text-main, #172033); font: inherit; font-size: 14px; line-height: 1.4; text-align: left; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
+.auth-card .signup-fields .custom-select-option:hover, .auth-card .signup-fields .custom-select-option.active { background: rgb(99 102 241 / .09); }
+.auth-card .signup-fields .custom-select-option.selected { color: var(--primary, #635bdb); font-weight: 600; }
+body.dark-mode .auth-card .signup-fields .custom-select-menu { background: var(--bg-surface, #111a2e); border-color: var(--border-base, #344054); box-shadow: 0 12px 30px rgb(0 0 0 / .32); }
+@keyframes customSelectIn { from { opacity: 0; transform: translateY(-4px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
