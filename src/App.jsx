@@ -33,6 +33,34 @@ function Badge({ children, tone = 'slate' }) { return <span className={`badge ${
 function Stat({ label, value, hint, icon: Icon }) { return <div className="stat"><div className="stat-top"><span>{label}</span><span className="icon-box"><Icon size={18}/></span></div><strong>{value}</strong><small>{hint}</small></div> }
 function SectionTitle({ title, sub, action }) { return <div className="section-title"><div><h2>{title}</h2>{sub && <p>{sub}</p>}</div>{action}</div> }
 
+
+function CustomSelect({ value, onChange, options, ariaLabel }) {
+  const [open, setOpen] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(Math.max(0, options.findIndex(option => option.value === value)))
+  useEffect(() => {
+    if (!open) return
+    const close = event => { if (!event.target.closest?.('.custom-select-wrap')) setOpen(false) }
+    const keydown = event => {
+      if (event.key === 'Escape') setOpen(false)
+      if (event.key === 'ArrowDown') { event.preventDefault(); setActiveIndex(index => (index + 1) % options.length) }
+      if (event.key === 'ArrowUp') { event.preventDefault(); setActiveIndex(index => (index - 1 + options.length) % options.length) }
+      if (event.key === 'Enter') { event.preventDefault(); onChange(options[activeIndex]?.value); setOpen(false) }
+    }
+    document.addEventListener('mousedown', close)
+    document.addEventListener('keydown', keydown)
+    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', keydown) }
+  }, [open, options, activeIndex, onChange])
+  const selected = options.find(option => option.value === value)
+  return <div className={`custom-select-wrap${open ? ' is-open' : ''}`}>
+    <button type="button" className="auth-select custom-select-trigger" aria-label={ariaLabel} aria-haspopup="listbox" aria-expanded={open} onClick={() => { setOpen(current => !current); setActiveIndex(Math.max(0, options.findIndex(option => option.value === value))) }}>
+      <span>{selected?.label ?? ''}</span><ChevronRight className="custom-select-chevron" size={18} />
+    </button>
+    {open && <div className="custom-select-menu" role="listbox" aria-label={ariaLabel}>
+      {options.map((option, index) => <button type="button" role="option" aria-selected={option.value === value} key={option.value} className={`custom-select-option${option.value === value ? ' selected' : ''}${index === activeIndex ? ' active' : ''}`} onMouseEnter={() => setActiveIndex(index)} onClick={() => { onChange(option.value); setOpen(false) }}>{option.label}</button>)}
+    </div>}
+  </div>
+}
+
 function App() {
   const [theme, setTheme] = useState(getInitialTheme)
   const [page, setPage] = useState('Dashboard')
@@ -80,9 +108,9 @@ function App() {
   const [authOtp, setAuthOtp] = useState('')
   const [authOtpSent, setAuthOtpSent] = useState(false)
   const [authName, setAuthName] = useState('')
-  const [authYear, setAuthYear] = useState('')
+  const [authYear, setAuthYear] = useState('1st Year')
   const [authBranch, setAuthBranch] = useState('')
-  const [authBatch, setAuthBatch] = useState('')
+  const [authBatch, setAuthBatch] = useState('1')
   const [authRollNo, setAuthRollNo] = useState('')
   const [authError, setAuthError] = useState('')
 
@@ -306,14 +334,10 @@ function App() {
           <label className="auth-label">Full name<input value={authName} onChange={e => setAuthName(e.target.value)} placeholder="Enter your full name" autoComplete="name" required /></label>
           <div className="signup-fields-grid">
             <label className="auth-label">Academic year
-              <select className="auth-select" value={authYear} onChange={e => setAuthYear(e.target.value)} required>
-                <option value="" disabled>Select year</option><option value="1st Year">1st Year</option><option value="2nd Year">2nd Year</option><option value="3rd Year">3rd Year</option><option value="4th Year">4th Year</option>
-              </select>
+              <CustomSelect value={authYear} onChange={setAuthYear} ariaLabel="Academic year" options={[{value:'1st Year',label:'1st Year'},{value:'2nd Year',label:'2nd Year'},{value:'3rd Year',label:'3rd Year'},{value:'4th Year',label:'4th Year'}]} />
             </label>
             <label className="auth-label">Batch
-              <select className="auth-select" value={authBatch} onChange={e => setAuthBatch(e.target.value)} required>
-                <option value="" disabled>Select batch</option><option value="1">Batch 1</option><option value="2">Batch 2</option>
-              </select>
+              <CustomSelect value={authBatch} onChange={setAuthBatch} ariaLabel="Batch" options={[{value:'1',label:'Batch 1'},{value:'2',label:'Batch 2'}]} />
             </label>
             <label className="auth-label">Branch<input value={authBranch} onChange={e => setAuthBranch(e.target.value)} placeholder="Enter your branch" required /></label>
             <label className="auth-label">Roll number<input value={authRollNo} onChange={e => setAuthRollNo(e.target.value)} placeholder="Enter your roll no." required /></label>
