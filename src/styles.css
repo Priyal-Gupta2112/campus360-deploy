@@ -2702,3 +2702,41 @@ body.dark-mode .timetable-filters .custom-select-menu {
   box-shadow: 0 12px 30px rgb(0 0 0 / 32%);
 }
 
+/* Timetable Controls & Grid */
+.timetable-control-panel {
+  padding: 20px 24px;
+}
+
+.timetable-top-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.branch-selector-box select {
+  border: 1px solid var(--border-base);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 13px;
+  background: var(--bg-surface);
+  color: var(--text-main);
+  outline: none;
+}
+
+.branch-selector-box select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-subtle);
+}
+
+@media (max-width: 768px) {
+  .timetable-top-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .branch-selector-box select {
+    width: 100%;
+  }
+}
+
