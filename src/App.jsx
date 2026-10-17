@@ -524,15 +524,6 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
     notify('Subject added.');
   }
 
-  function removeSubject(id, name) {
-    if (subjects.length <= 1) {
-      notify('You must keep at least one subject.');
-      return;
-    }
-    setSubjects(old => old.filter(s => s.id !== id));
-    notify(`Removed ${name}.`);
-  }
-
   return (
     <div className="page-stack">
       <div className="welcome-row">
@@ -1236,8 +1227,50 @@ const locations = [
   return <div className="page-stack"><div className="welcome-row"><div><div className="eyebrow"><MapPin size={14}/> KNOW YOUR CAMPUS</div><h1>Campus directory & guide</h1><p className="muted">Find campus facilities, student bodies, clubs and events.</p></div><Badge tone="green">Directory</Badge></div>
     <section className="panel"><SectionTitle title="Campus facilities and contacts" sub="Some room numbers and contact details need official confirmation."/><div className="directory-grid">{shownContacts.map((c,i)=><button className="directory-card" key={c.name} onClick={()=>setSelected(c)}><span className={`directory-icon directory-${i%4}`}><MapPin size={19}/></span><b>{c.name}</b><small>{c.place}</small><p>{c.detail}</p><em>View details <ArrowRight size={14}/></em></button>)}</div></section>
     <section className="panel"><SectionTitle title="What's happening on campus?" sub="Browse events and preview status changes."/><div className="filter-row">{['All',...states].map(s=><button key={s} className={eventFilter===s?'active':''} onClick={()=>setEventFilter(s)}>{s}</button>)}</div>{shownEvents.length?<div className="event-list">{shownEvents.map((ev,i)=><div className="event-row event-row-wide" key={ev.id||ev.name}><div className={`event-date ed-${i%3}`}><CalendarDays size={20}/><small>{ev.time.split('·')[0].trim().toUpperCase()}</small></div><div className="event-info"><b>{ev.name}</b><small>{ev.time}</small><Badge tone={ev.state==='Live Now'?'green':ev.state==='Event Ended'?'slate':ev.state==='Starting Soon'?'amber':'purple'}>{ev.state}</Badge></div><button className="secondary compact" onClick={()=>cycleEvent(ev.id||ev.name)}>Update status <ArrowRight size={14}/></button></div>)}</div>:<p className="muted">No events match this filter. Open Campus Pulse to add an event.</p>}</section>
-    <section className="panel"><SectionTitle title={`VESIT clubs & student communities (${clubs.length} sample listings)`} sub="Club names and presidents must be verified against the official current college directory."/><div className="filter-row">{['All','Technical','Cultural','Literary','Sports','Creative'].map(s=><button key={s} className={clubFilter===s?'active':''} onClick={()=>setClubFilter(s)}>{s}</button>)}</div><div className="directory-grid">{shownClubs.map((c,i)=><div className="directory-card club-card" key={c.name}><span className={`directory-icon directory-${i%4}`}><Users size={19}/></span><b>{c.name}</b><small>{c.category}</small><p>{c.detail}</p><div className="club-president"><strong>President</strong><span>{c.president}</span></div><button className="text-button" onClick={()=>notify('Club contact information needs verification by the college admin.')}>Contact club <ArrowRight size={14}/></button></div>)}</div></section>
-    <section className="panel"><SectionTitle title="Campus location guide" sub="OpenStreetMap view centred approximately on the VESIT campus area."/><div className="leaflet-map-wrap"><MapContainer center={[19.0445,72.8992]} zoom={15} scrollWheelZoom={false} style={{height:'330px',width:'100%'}}><TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/><Marker position={[19.0445,72.8992]} icon={rideMarkerIcon}><Popup>VESIT campus area (approximate). Confirm exact building locations locally.</Popup></Marker></MapContainer></div><p className="map-disclaimer">Map markers and directory information are prototype placeholders; verify official details before public use.</p></section>
+   <section className="panel" id="vesit-clubs">
+  <SectionTitle
+    title={`VESIT clubs & student communities (${clubs.length} sample listings)`}
+    sub="Club names and presidents must be verified against the official current college directory."
+  />
+
+  <div className="filter-row">
+    {['All', 'Technical', 'Cultural', 'Literary', 'Sports', 'Creative'].map(s => (
+      <button
+        key={s}
+        className={clubFilter === s ? 'active' : ''}
+        onClick={() => setClubFilter(s)}
+      >
+        {s}
+      </button>
+    ))}
+  </div>
+
+  <div className="directory-grid">
+    {shownClubs.map((c, i) => (
+      <div className="directory-card club-card" key={c.name}>
+        <span className={`directory-icon directory-${i % 4}`}>
+          <Users size={19} />
+        </span>
+
+        <b>{c.name}</b>
+        <small>{c.category}</small>
+        <p>{c.detail}</p>
+
+        <div className="club-president">
+          <strong>President</strong>
+          <span>{c.president}</span>
+        </div>
+
+        <button
+          className="text-button"
+          onClick={() => notify('Club contact information needs verification by the college admin.')}
+        >
+          Contact club <ArrowRight size={14} />
+        </button>
+      </div>
+    ))}
+  </div>
+</section> <section className="panel"><SectionTitle title="Campus location guide" sub="OpenStreetMap view centred approximately on the VESIT campus area."/><div className="leaflet-map-wrap"><MapContainer center={[19.0445,72.8992]} zoom={15} scrollWheelZoom={false} style={{height:'330px',width:'100%'}}><TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/><Marker position={[19.0445,72.8992]} icon={rideMarkerIcon}><Popup>VESIT campus area (approximate). Confirm exact building locations locally.</Popup></Marker></MapContainer></div><p className="map-disclaimer">Map markers and directory information are prototype placeholders; verify official details before public use.</p></section>
     {selected && (
       <div className="modal-backdrop" onClick={() => setSelected(null)}>
         <div className="modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
