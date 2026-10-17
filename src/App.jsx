@@ -20,7 +20,7 @@ const getInitialTheme = () => {
 }
 
 const nav = [
-  ['Dashboard', LayoutDashboard], ['Academic Planner', GraduationCap], ['Timetable', CalendarDays], ['Rides', Bike],
+  ['Dashboard', LayoutDashboard], ['Academic Planner', GraduationCap], ['Faculty', BookOpen], ['Timetable', CalendarDays], ['Rides', Bike],
   ['Challenges', Trophy], ['Campus Guide', MapPin], ['Campus Pulse', CalendarDays], ['SkillSwap', Users],
 ]
 
@@ -373,6 +373,7 @@ const [loggedIn, setLoggedIn] = useState(() => {
       <header className="topbar"><div className="topbar-left"><button type="button" className="mobile-menu" onClick={() => { setSidebarCollapsed(false); setMobileNav(true) }} aria-label="Show sidebar" title="Show sidebar"><Menu/></button><div className="crumb">Campus / <b>{page}</b></div></div><div className="top-actions"><form className="searchbox" onSubmit={e => { e.preventDefault(); runCampusSearch() }}><Search size={16}/><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search campus..." aria-label="Search campus"/><button type="submit" className="search-submit" aria-label="Search campus" title="Search campus"><ArrowRight size={15}/></button></form><button type="button" className="theme-toggle" onClick={() => setTheme(current => current === 'dark' ? 'light' : 'dark')} aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>{theme === 'dark' ? <Sun size={18}/> : <Moon size={18}/>}<span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span></button><div className="notifications-wrap"><button type="button" className="notifications-button" title="Notifications" aria-label={`Notifications, ${unreadNotifications} unread`} onClick={() => { setShowNotifications(v => !v); setNotifications(old => old.map(n => ({...n, read:true}))) }}><Bell size={18}/><span>Notifications</span>{unreadNotifications > 0 && <b>{unreadNotifications > 9 ? '9+' : unreadNotifications}</b>}</button>{showNotifications && <div className="notifications-popover"><div className="notifications-head"><strong>Notifications</strong><button type="button" onClick={() => setNotifications([])}>Clear all</button></div>{notifications.length ? notifications.map(n => <div className={`notification-entry ${n.read ? '' : 'unread'}`} key={n.id}><span>{n.message}</span><small>{new Date(n.time).toLocaleString()}</small></div>) : <p className="notifications-empty">You're all caught up. Important reminders will appear here.</p>}<button className="notifications-close" onClick={() => setShowNotifications(false)}>Close</button></div>}</div><button className="user-button" onClick={() => setShowLogin(true)}><div className="avatar small">{profile.name.split(' ').map(x => x[0]).slice(0,2).join('')}</div><span>{loggedIn ? 'Account' : 'Demo profile'}</span><ChevronRight size={15}/></button></div></header>
       <div className="page-content">
         {page === 'Dashboard' && <Dashboard profile={profile} setProfile={setProfile} marksRows={marksRows} rides={rides} challenges={challenges} points={points} eventsList={eventsList} navigate={navigate} notify={notify} assignments={assignments} />}
+        {page === 'Faculty' && <FacultyDirectory search={search}/> }
         {page === 'Timetable' && <Timetable timetable={timetable} setTimetable={setTimetable} notify={notify}/> }
         {page === 'Academic Planner' && <AcademicPlanner subjects={subjects} setSubjects={setSubjects} marksRows={marksRows} targetSgpa={targetSgpa} setTargetSgpa={setTargetSgpa} totalCredits={totalCredits} targetReachable={targetReachable} updateSubject={updateSubject} activeTab={activeTab} setActiveTab={setActiveTab} notify={notify}/>}
         {page === 'Rides' && <Rides rides={rides} requestRide={requestRide} updateRideRequest={updateRideRequest} profile={profile} newRide={newRide} setNewRide={setNewRide} addRide={addRide} search={search}/>}
@@ -835,6 +836,145 @@ const locations = [
     )}
   </div>
 }
+
+
+const facultyDepartments = [
+  {
+    name: 'Electronics and Computer Science', code: 'etrx', url: 'https://vesit.ves.ac.in/academics/faculty/faculty-profile/etrx/',
+    faculty: [
+      ['Dr. Naveeta Kant', 'Head of Department'], ['Dr. T. Rajani Mangala', 'Deputy Head of Department'], ['Dr. Abhay Kshirsagar', 'Associate Professor'], ['Dr. Asawari Dudwadkar', 'Assistant Professor'], ['Abhijit Shete', 'Assistant Professor'], ['Dr. Parmeshwar Birajadar', 'Assistant Professor'], ['Yogesh Pandit', 'Assistant Professor'], ['Sarika Kuhikar', 'Assistant Professor'], ['Dr. (Mrs.) Gauri Sahoo', 'Assistant Professor'], ['Amrita Jhaveri', 'Assistant Professor'], ['Abhishek Chaudhari', 'Assistant Professor']
+    ]
+  },
+  {
+    name: 'Computer Engineering', code: 'cmpn', url: 'https://vesit.ves.ac.in/academics/faculty/faculty-profile/cmpn/',
+    faculty: [
+      ['Dr. Nupur Giri', 'Head of Department'], ['Dr. Sharmila Siddhartha Sengupta', 'Professor'], ['Dr. Saylee Gharge', 'Professor'], ['Dr. Sujata Atul Khedkar', 'Associate Professor'], ['Dr. Machhindranath Devidas Patil', 'Associate Professor'], ['Dr. Dashrath Mane', 'Associate Professor'], ['Dr. Prashant Vilas Kanade', 'Assistant Professor'], ['Geocey Shejy', 'Assistant Professor'], ['Dr. Rohini Temkar', 'Assistant Professor'], ['Vidya S. Zope', 'Assistant Professor'], ['Dr. Indu Dokare', 'Assistant Professor'], ['Dr. Priya R.L', 'Assistant Professor'], ['Lifna C S', 'Assistant Professor'], ['Abha Tewari', 'Assistant Professor'], ['Sanjay Mirchandani', 'Assistant Professor'], ['Pallavi Gangurde', 'Assistant Professor'], ['Nusrat Ansari', 'Assistant Professor'], ['Sunita Suralkar', 'Assistant Professor'], ['Rupali Hande', 'Assistant Professor'], ['Sujata Khandaskar', 'Assistant Professor'], ['Pallavi Saindane', 'Assistant Professor'], ['Yugchhaya Dhote', 'Assistant Professor'], ['Manisha Mathur', 'Assistant Professor'], ['Priti Ashish Joshi', 'Assistant Professor'], ['Mrs. Priyanka Nagda', 'Assistant Professor'], ['Pradnya Raut', 'Assistant Professor'], ['Vikrant Ingle', 'Assistant Professor'], ['Himali Patil', 'Assistant Professor']
+    ]
+  },
+  {
+    name: 'Automation and Robotics', code: 'inst', url: 'https://vesit.ves.ac.in/academics/faculty/faculty-profile/inst/',
+    faculty: [
+      ['Dr. J. M. Nair', 'Principal'], ['Dr. Sangeetha Prasanna Ram', 'Head of Department'], ['Deepti Khimani', 'Deputy Head of Department'], ['Dr. Nilima V Warke', 'Associate Professor'], ['Madhumati Khuspe', 'Assistant Professor'], ['Dr. Kadambari Sharma', 'Assistant Professor'], ['Kader B. T. Shaikh', 'Assistant Professor'], ['Prasad Godse', 'Assistant Professor'], ['Amudha Senthilkumar', 'Assistant Professor'], ['Gopalakrishnan Narayanan', 'Assistant Professor'], ['Jayasree Ramakrishnan', 'Assistant Professor'], ['Ramya Tirumalasetti', 'Assistant Professor']
+    ]
+  },
+  {
+    name: 'Electronics and Telecommunication', code: 'extc', url: 'https://vesit.ves.ac.in/academics/faculty/faculty-profile/extc/',
+    faculty: [
+      ['Dr. Chandan Singh. D. Rawat', 'Head of Department'], ['Dr. Manisha Chattopadhyay', 'Deputy Head of Department'], ['Dr. Nadir N. Charniya', 'Professor'], ['Dr. Ranjan Bala Jain', 'Professor'], ['Dr. Jaymala Adsul', 'Associate Professor'], ['Dr. Monali Chaudhari', 'Assistant Professor'], ['Dr. Nandini Ammanagi', 'Assistant Professor'], ['Anuradha Jadiya', 'Assistant Professor'], ['Gaurav Tawde', 'Assistant Professor'], ['Arti Sawant', 'Assistant Professor'], ['Himali Patel', 'Assistant Professor'], ['Chintan Jethva', 'Assistant Professor'], ['Aarti Wadhwani', 'Assistant Professor']
+    ]
+  },
+  {
+    name: 'Information Technology', code: 'it', url: 'https://vesit.ves.ac.in/academics/faculty/faculty-profile/it/',
+    faculty: [
+      ['Dr. Shalu Chopra', 'Head of Department'], ['Dr. Manoj Sabnis', 'Deputy Head of Department'], ['Dr. Shanta Sondur', 'Professor'], ['Dr. Asma Parveen I. Siddavatam', 'Associate Professor'], ['Charusheela Nehete', 'Assistant Professor'], ['Jayshree Hajgude', 'Assistant Professor'], ['Vidya Pujari', 'Assistant Professor'], ['Vinita Mishra', 'Assistant Professor']
+    ]
+  },
+  {
+    name: 'AI and Data Science', code: 'dsai', url: 'https://vesit.ves.ac.in/academics/faculty/faculty-profile/dsai/',
+    faculty: [
+      ['Dr. M. Vijayalakshmi', 'Vice Principal and Department HOD'], ['Dr. Anjali Shrikant Yeole', 'Deputy Head of Department'], ['Dr. Kanchan Chavan', 'Assistant Professor'], ['Sangeeta Oswal', 'Assistant Professor'], ['Amit Singh', 'Assistant Professor'], ['Neeta Chavan', 'Assistant Professor'], ['Ajinkya Valanjoo', 'Assistant Professor'], ['Vijay Shejwalkar', 'Assistant Professor'], ['Mrs. Kusum Kardam', 'Assistant Professor'], ['Dr. Smita Mane', 'Assistant Professor'], ['Anil Bharat Ahir', 'Assistant Professor'], ['Mrs. Bincy Ivin', 'Assistant Professor'], ['Mrs. Bhavana Chaudhari', 'Assistant Professor'], ['Mrs. Himanshi Jiwatramani', 'Assistant Professor'], ['Mrs. Bhagyashree', 'Assistant Professor'], ['Mrs. Puja Vakhare', 'Assistant Professor'], ['Mrs. Prajakta Pote', 'Assistant Professor'], ['Mrs. Samruddhi Yadav', 'Assistant Professor'], ['Mrs. Aarti Jangid', 'Assistant Professor'], ['Mr. Omkar Ghag', 'Assistant Professor']
+    ]
+  },
+  {
+    name: 'Master of Computer Application', code: 'mca', url: 'https://vesit.ves.ac.in/academics/faculty/faculty-profile/mca/',
+    faculty: [
+      ['Dr. Shivkumar Goel', 'Head of Department'], ['Dr. Dhanamma Jagli', 'Deputy Head of Department'], ['Dr. Gresha Bhatia', 'Professor'], ['Dr. Mona Deshmukh', 'Associate Professor'], ['Dr. Ramesh Solanki', 'Assistant Professor'], ['Dr. Ameya Parkar', 'Assistant Professor'], ['Indira Bhattacharya', 'Assistant Professor'], ['Ruchi Rautela', 'Assistant Professor'], ['Sunny Nahar', 'Assistant Professor'], ['Dr. Meenakshi Garg', 'Assistant Professor'], ['Vaishali Gatty', 'Assistant Professor'], ['Monali Rajput', 'Assistant Professor']
+    ]
+  },
+  {
+    name: 'First year Bachelor of Technology', code: 'hums', url: 'https://vesit.ves.ac.in/academics/faculty/faculty-profile/hums/',
+    faculty: [
+      ['Dr. Chandan Singh. D. Rawat', 'Dean'], ['Mr. Subhash B. Singh', 'Assistant Professor'], ['Dr. Ravi Shankar', 'Assistant Professor'], ['Dr. A. Netto Mertia', 'Assistant Professor'], ['Dr. Shashwati Roy Majumder', 'Assistant Professor'], ['Dr. Maya Bhat', 'Assistant Professor'], ['Dr. Keya Surag Doshi', 'Assistant Professor']
+    ]
+  }
+]
+
+function FacultyDirectory({ search }) {
+  const [departmentName, setDepartmentName] = useState(facultyDepartments[0].name)
+  const department = facultyDepartments.find(d => d.name === departmentName) || facultyDepartments[0]
+  const filtered = department.faculty.filter(([name, designation]) => `${name} ${designation} ${department.name}`.toLowerCase().includes((search || '').toLowerCase()))
+  return <div className="page-stack">
+    <div className="welcome-row"><div><div className="eyebrow"><BookOpen size={14}/> VESIT ACADEMIC DIRECTORY</div><h1>Faculty</h1><p className="muted">Find faculty names and designations by department. Details are based on the official VESIT faculty directory.</p></div><a className="secondary" href={department.url} target="_blank" rel="noopener noreferrer">Official faculty page <ArrowRight size={14}/></a></div>
+    <section className="panel">
+      <SectionTitle title="Choose a department" sub="Select a branch to view its faculty list."/>
+      <label className="field-label">FACULTY DEPARTMENT
+        <select value={departmentName} onChange={e => setDepartmentName(e.target.value)}>
+          {facultyDepartments.map(d => <option key={d.code} value={d.name}>{d.name}</option>)}
+        </select>
+      </label>
+      <div className="faculty-summary"><div><strong>{department.faculty.length}</strong><span>listed faculty entries</span></div><div><strong>{department.name}</strong><span>Department</span></div><a href={department.url} target="_blank" rel="noopener noreferrer">View full official directory <ArrowRight size={14}/></a></div>
+    </section>
+    <section className="panel"><SectionTitle title={`${department.name} faculty`} sub="Names and designations shown here; visit the official directory for additional credentials, office locations, courses and research details where available."/>
+      {filtered.length ? <div className="directory-grid faculty-grid">{filtered.map(([name, designation]) => <article className="directory-card faculty-card" key={`${department.code}-${name}`}><span className="directory-icon directory-1"><Users size={19}/></span><b>{name}</b><small>{designation}</small><a href={department.url} target="_blank" rel="noopener noreferrer">View official profile <ArrowRight size={14}/></a></article>)}</div> : <p className="muted">No faculty names match the current search. Clear the campus search field to see the full list.</p>}
+      <p className="map-disclaimer">Faculty details can change. The official VESIT page is the source of truth; this directory does not include photos.</p>
+    </section>
+  </div>
+}
+
+function CampusGuide({ search, eventsList, setEventsList, notify }) {
+  const [eventFilter,setEventFilter] = useState('All')
+  const [selected,setSelected] = useState(null)
+  const [clubFilter,setClubFilter] = useState('All')
+  const states=['Registration Open','Starting Soon','Live Now','Event Ended']
+  const locations=[
+    {name:'Central Library',category:'Facilities',place:'Library building',detail:'Open the official VESIT Library page for library facilities and information.',url:'https://vesit.ves.ac.in/infrastructure/library/',linkLabel:'Open VESIT Library Website'},
+    {name:'Campus Canteen',category:'Facilities',place:'Student facilities area',detail:'Open the official VESIT Canteen page for canteen facilities and information.',url:'https://vesit.ves.ac.in/infrastructure/canteen/',linkLabel:'Open VESIT Canteen Website'},
+    {name:'Principal / Director Office',category:'Administration',place:'Administration block',detail:'For formal academic and administrative matters. Confirm office room and visiting hours with VESIT.'},
+    {
+  name: 'VESIT Rail / Transport Help',
+  category: 'Transport',
+  place: 'Student support directory',
+  detail: 'Open the official VESIT Rail portal for railway-related student services.',
+url: 'https://rail.vesit.ves.ac.in/'
+    },
+    {name:'Reception / Main Desk',category:'Administration',place:'Main entrance',detail:'Open the official VESIT contact page for reception and general enquiries.',url:'https://vesit.ves.ac.in/footer/contact-us/',linkLabel:'Open VESIT Contact Page'},
+    {name:'VES Council',category:'Student bodies',place:'Student council',detail:'Student representation, campus initiatives and student-facing announcements. Confirm current office-bearers with the college.'},
+  ]
+  const clubs=[
+    {name:'Coding / Technical Club',category:'Technical',president:'To be confirmed by college',detail:'Technical workshops, peer coding and project sessions.'},
+    {name:'Robotics / Electronics Club',category:'Technical',president:'To be confirmed by college',detail:'Hands-on hardware, robotics and engineering activities.'},
+    {name:'Cultural Committee',category:'Cultural',president:'To be confirmed by college',detail:'Cultural events, performances and campus celebrations.'},
+    {name:'Literary / Debate Club',category:'Literary',president:'To be confirmed by college',detail:'Writing, speaking, debate and reading activities.'},
+    {name:'Sports Committee',category:'Sports',president:'To be confirmed by college',detail:'Sports activities, tournaments and student fitness.'},
+    {name:'Photography / Media Club',category:'Creative',president:'To be confirmed by college',detail:'Photography, design, event coverage and creative media.'},
+  ]
+  const shownContacts=locations.filter(x=>`${x.name} ${x.category} ${x.place} ${x.detail}`.toLowerCase().includes(search.toLowerCase()))
+  const shownEvents=eventsList.filter(e=>eventFilter==='All'||e.state===eventFilter)
+  const shownClubs=clubs.filter(c=>(clubFilter==='All'||c.category===clubFilter)&&`${c.name} ${c.category} ${c.president}`.toLowerCase().includes(search.toLowerCase()))
+  function cycleEvent(id){setEventsList(old=>old.map(e=>{if((e.id||e.name)!==id)return e;const i=states.indexOf(e.state);return {...e,state:states[(i+1+states.length)%states.length]}}));notify('Event status updated in this prototype.')}
+  return <div className="page-stack"><div className="welcome-row"><div><div className="eyebrow"><MapPin size={14}/> KNOW YOUR CAMPUS</div><h1>Campus directory & guide</h1><p className="muted">Find campus facilities, student bodies, clubs and events.</p></div><Badge tone="green">Directory</Badge></div>
+    <section className="panel"><SectionTitle title="Campus facilities and contacts" sub="Some room numbers and contact details need official confirmation."/><div className="directory-grid">{shownContacts.map((c,i)=><button className="directory-card" key={c.name} onClick={()=>setSelected(c)}><span className={`directory-icon directory-${i%4}`}><MapPin size={19}/></span><b>{c.name}</b><small>{c.place}</small><p>{c.detail}</p><em>View details <ArrowRight size={14}/></em></button>)}</div></section>
+    <section className="panel"><SectionTitle title="What's happening on campus?" sub="Browse events and preview status changes."/><div className="filter-row">{['All',...states].map(s=><button key={s} className={eventFilter===s?'active':''} onClick={()=>setEventFilter(s)}>{s}</button>)}</div>{shownEvents.length?<div className="event-list">{shownEvents.map((ev,i)=><div className="event-row event-row-wide" key={ev.id||ev.name}><div className={`event-date ed-${i%3}`}><CalendarDays size={20}/><small>{ev.time.split('·')[0].trim().toUpperCase()}</small></div><div className="event-info"><b>{ev.name}</b><small>{ev.time}</small><Badge tone={ev.state==='Live Now'?'green':ev.state==='Event Ended'?'slate':ev.state==='Starting Soon'?'amber':'purple'}>{ev.state}</Badge></div><button className="secondary compact" onClick={()=>cycleEvent(ev.id||ev.name)}>Update status <ArrowRight size={14}/></button></div>)}</div>:<p className="muted">No events match this filter. Open Campus Pulse to add an event.</p>}</section>
+    <section className="panel"><SectionTitle title={`VESIT clubs & student communities (${clubs.length} sample listings)`} sub="Club names and presidents must be verified against the official current college directory."/><div className="filter-row">{['All','Technical','Cultural','Literary','Sports','Creative'].map(s=><button key={s} className={clubFilter===s?'active':''} onClick={()=>setClubFilter(s)}>{s}</button>)}</div><div className="directory-grid">{shownClubs.map((c,i)=><div className="directory-card club-card" key={c.name}><span className={`directory-icon directory-${i%4}`}><Users size={19}/></span><b>{c.name}</b><small>{c.category}</small><p>{c.detail}</p><div className="club-president"><strong>President</strong><span>{c.president}</span></div><button className="text-button" onClick={()=>notify('Club contact information needs verification by the college admin.')}>Contact club <ArrowRight size={14}/></button></div>)}</div></section>
+    <section className="panel"><SectionTitle title="Campus location guide" sub="OpenStreetMap view centred approximately on the VESIT campus area."/><div className="leaflet-map-wrap"><MapContainer center={[19.0445,72.8992]} zoom={15} scrollWheelZoom={false} style={{height:'330px',width:'100%'}}><TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/><Marker position={[19.0445,72.8992]} icon={rideMarkerIcon}><Popup>VESIT campus area (approximate). Confirm exact building locations locally.</Popup></Marker></MapContainer></div><p className="map-disclaimer">Map markers and directory information are prototype placeholders; verify official details before public use.</p></section>
+    {selected && (
+      <div className="modal-backdrop" onClick={() => setSelected(null)}>
+        <div className="modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+          <div className="modal-head">
+            <Badge tone="purple">{selected.category}</Badge>
+            <button className="icon-button" aria-label="Close details" onClick={() => setSelected(null)}><X size={18}/></button>
+          </div>
+          <h2>{selected.name}</h2>
+          <p className="muted">{selected.detail}</p>
+          <div className="challenge-detail-meta">
+            <span><MapPin size={15}/> {selected.place}</span>
+            <span><CircleHelp size={15}/> Check official college contacts for verified hours and phone numbers.</span>
+          </div>
+          {selected.url && (
+            <p style={{ marginTop: '14px' }}>
+              <a href={selected.url} target="_blank" rel="noopener noreferrer"
+                style={{ display: 'inline-block', color: '#5145f5', fontWeight: 600, textDecoration: 'underline' }}>
+                {selected.linkLabel || 'Open official website'} →
+              </a>
+            </p>
+          )}
+          <button className="primary" onClick={() => setSelected(null)}>Close details</button>
+        </div>
+      </div>
+    )}
+  </div>
+}
+
 
 function CampusPulse({eventsList,setEventsList,assignments,setAssignments,notify}) {
   const [tab,setTab]=useState('Events')
