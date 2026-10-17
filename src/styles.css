@@ -2775,3 +2775,72 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 body.dark-mode{--bg-canvas:#0b1020;--bg-surface:#11182b;--bg-surface-alt:#171f35;--bg-surface-elevated:#1b2440;--bg-subtle:#0f1628;--bg-sidebar:#090e1d;--bg-sidebar-hover:#171f35;--bg-sidebar-active:#6558f5;--border-subtle:#1c2540;--border-base:#26304d;--border-strong:#394565;--text-main:#f5f6ff;--text-secondary:#c4cbe3;--text-muted:#98a2c3;--text-subtle:#707b9f;--primary:#8a80ff;--primary-hover:#a59eff;--primary-subtle:#252348;--primary-border:#454080;--primary-text:#c3bdff;color-scheme:dark}
 body.dark-mode .topbar{background:rgb(17 24 43 / .92)}body.dark-mode .tab-row,body.dark-mode .field-label input,body.dark-mode .field-label select,body.dark-mode .field-label textarea,body.dark-mode .secondary,body.dark-mode .recommendation-card,body.dark-mode .skill-card,body.dark-mode .directory-card{background:var(--bg-surface);color:var(--text-main);border-color:var(--border-base)}body.dark-mode .assignment-row,body.dark-mode .event-row,body.dark-mode .faculty-summary{background:var(--bg-surface-alt);border-color:var(--border-base)}body.dark-mode .tab-row button.active{background:var(--bg-surface-elevated);color:var(--primary-text)}body.dark-mode .tab-row button{color:var(--text-muted)}body.dark-mode .field-label input:focus,body.dark-mode .field-label select:focus,body.dark-mode .field-label textarea:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgb(138 128 255 / .16)}
 
+
+/* Campus360 Faculty page spacing and layout fix */
+.faculty-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 22px;
+  margin-top: 20px;
+  border: 1px solid #e5e7f5;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.faculty-summary > * {
+  min-width: 0;
+  line-height: 1.65;
+}
+
+.faculty-summary h2,
+.faculty-summary h3,
+.faculty-summary p {
+  margin: 0 0 10px;
+}
+
+.faculty-card {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid #e5e7f5;
+  border-radius: 16px;
+  background: #fff;
+  line-height: 1.65;
+}
+
+.faculty-card h3 {
+  margin: 0 0 8px;
+  line-height: 1.4;
+}
+
+.faculty-card p {
+  margin: 6px 0;
+}
+
+.faculty-summary a,
+.faculty-card a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  color: #5546e8;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.faculty-summary a:hover,
+.faculty-card a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 700px) {
+  .faculty-summary {
+    flex-direction: column;
+    padding: 16px;
+  }
+
+  .faculty-card {
+    padding: 16px;
+  }
+}
