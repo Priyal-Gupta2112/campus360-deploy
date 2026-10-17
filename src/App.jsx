@@ -607,7 +607,13 @@ function CampusGuide({ search, eventsList, setEventsList, notify }) {
     {name:'Central Library',category:'Facilities',place:'Library building',detail:'Study spaces, borrowing and reference resources. Confirm current opening hours with campus administration.'},
     {name:'Campus Canteen',category:'Facilities',place:'Student facilities area',detail:'Food and refreshments. Menu, prices and timings should be confirmed with the canteen operator.'},
     {name:'Principal / Director Office',category:'Administration',place:'Administration block',detail:'For formal academic and administrative matters. Confirm office room and visiting hours with VESIT.'},
-    {name:'VESIT Rail / Transport Help',category:'Transport',place:'Student support directory',detail:'Transport and railway commute information. This is a directory placeholder; confirm the official contact before relying on it.'},
+    {
+  name: 'VESIT Rail / Transport Help',
+  category: 'Transport',
+  place: 'Student support directory',
+  detail: 'Access the official VESIT Rail portal for railway-related student services.',
+  url: 'https://rail.vesit.ves.ac.in/'
+}
     {name:'Reception / Main Desk',category:'Administration',place:'Main entrance',detail:'First point of contact for visitors, directions and general enquiries.'},
     {name:'VES Council',category:'Student bodies',place:'Student council',detail:'Student representation, campus initiatives and student-facing announcements. Confirm current office-bearers with the college.'},
   ]
