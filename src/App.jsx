@@ -605,8 +605,8 @@ function CampusGuide({ search, eventsList, setEventsList, notify }) {
   const [clubFilter,setClubFilter] = useState('All')
   const states=['Registration Open','Starting Soon','Live Now','Event Ended']
   const locations=[
-    {name:'Central Library',category:'Facilities',place:'Library building',detail:'Study spaces, borrowing and reference resources. Confirm current opening hours with campus administration.'},
-    {name:'Campus Canteen',category:'Facilities',place:'Student facilities area',detail:'Food and refreshments. Menu, prices and timings should be confirmed with the canteen operator.'},
+    {name:'Central Library',category:'Facilities',place:'Library building',detail:'Open the official VESIT Library page for library facilities and information.',url:'https://vesit.ves.ac.in/infrastructure/library/',linkLabel:'Open VESIT Library Website'},
+    {name:'Campus Canteen',category:'Facilities',place:'Student facilities area',detail:'Open the official VESIT Canteen page for canteen facilities and information.',url:'https://vesit.ves.ac.in/infrastructure/canteen/',linkLabel:'Open VESIT Canteen Website'},
     {name:'Principal / Director Office',category:'Administration',place:'Administration block',detail:'For formal academic and administrative matters. Confirm office room and visiting hours with VESIT.'},
     {
   name: 'VESIT Rail / Transport Help',
@@ -615,7 +615,7 @@ function CampusGuide({ search, eventsList, setEventsList, notify }) {
   detail: 'Open the official VESIT Rail portal for railway-related student services.',
 url: 'https://rail.vesit.ves.ac.in/'
     },
-    {name:'Reception / Main Desk',category:'Administration',place:'Main entrance',detail:'First point of contact for visitors, directions and general enquiries.'},
+    {name:'Reception / Main Desk',category:'Administration',place:'Main entrance',detail:'Open the official VESIT contact page for reception and general enquiries.',url:'https://vesit.ves.ac.in/footer/contact-us/',linkLabel:'Open VESIT Contact Page'},
     {name:'VES Council',category:'Student bodies',place:'Student council',detail:'Student representation, campus initiatives and student-facing announcements. Confirm current office-bearers with the college.'},
   ]
   const clubs=[
@@ -652,7 +652,7 @@ url: 'https://rail.vesit.ves.ac.in/'
             <p style={{ marginTop: '14px' }}>
               <a href={selected.url} target="_blank" rel="noopener noreferrer"
                 style={{ display: 'inline-block', color: '#5145f5', fontWeight: 600, textDecoration: 'underline' }}>
-                Open VESIT Rail Portal →
+                {selected.linkLabel || 'Open official website'} →
               </a>
             </p>
           )}
