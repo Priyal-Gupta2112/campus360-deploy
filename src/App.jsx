@@ -328,7 +328,15 @@ const [loggedIn, setLoggedIn] = useState(() => {
     <div className="auth-decoration auth-decoration-one"/><div className="auth-decoration auth-decoration-two"/>
     <div className="auth-brand"><div className="brand-mark"><img src="/logo.png" alt="Campus360 logo" onLoad={e => { const fallback = e.currentTarget.nextElementSibling; if (fallback) fallback.style.display = 'none' }} onError={e => { e.currentTarget.style.display = 'none' }}/><Sparkles className="brand-fallback" size={22}/></div><div><b>Campus<span>360</span></b><small>YOUR COLLEGE COMPANION</small></div></div><button type="button" className="theme-toggle auth-theme-toggle" onClick={() => setTheme(current => current === 'dark' ? 'light' : 'dark')} aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>{theme === 'dark' ? <Sun size={18}/> : <Moon size={18}/>}<span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span></button>
     <div className="auth-layout">
-      <section className="auth-intro"><Badge tone="mint"><Sparkles size={13}/> FIRST-YEAR LIFE, SIMPLIFIED</Badge><h1>Your campus.<br/>Your people.<br/><span>Your next step.</span></h1><p>One place to plan your academics, find your way around campus, share rides and learn together.</p><div className="auth-benefits"><div><span><BookOpen size={17}/></span><b>Stay on top of academics</b></div><div><span><Users size={17}/></span><b>Find your campus community</b></div><div><span><MapPin size={17}/></span><b>Make campus feel closer</b></div></div><div className="auth-footnote">Built for first-year students · One connected campus</div></section>
+      <section className="auth-intro">
+        <section className="auth-intro">
+  <img
+    src="/images/vesit-campus.png"
+    alt="VESIT college campus"
+    className="campus-login-image"
+  />
+  <Badge tone="mint"><Sparkles size={13}/> FIRST-YEAR LIFE, SIMPLIFIED</Badge>
+          <Badge tone="mint"><Sparkles size={13}/> FIRST-YEAR LIFE, SIMPLIFIED</Badge><h1>Your campus.<br/>Your people.<br/><span>Your next step.</span></h1><p>One place to plan your academics, find your way around campus, share rides and learn together.</p><div className="auth-benefits"><div><span><BookOpen size={17}/></span><b>Stay on top of academics</b></div><div><span><Users size={17}/></span><b>Find your campus community</b></div><div><span><MapPin size={17}/></span><b>Make campus feel closer</b></div></div><div className="auth-footnote">Built for first-year students · One connected campus</div></section>
       <section className="auth-card"><div className="auth-card-top"><div className="auth-icon"><ShieldCheck size={22}/></div><span className="secure-label"><LockKeyhole size={12}/> Student access</span></div>
         <h2>{authMode === 'login' ? 'Welcome back' : 'Create your account'}</h2><p className="auth-subtitle">{authMode === 'login' ? 'Sign in with your phone number to continue.' : 'Join Campus360 and make your first year count.'}</p>
         <div className="auth-tabs"><button className={authMode === 'login' ? 'active' : ''} onClick={() => { setAuthMode('login'); setAuthOtpSent(false); setAuthError('') }}>Login</button><button className={authMode === 'signup' ? 'active' : ''} onClick={() => { setAuthMode('signup'); setAuthOtpSent(false); setAuthError('') }}>Sign Up</button></div>
