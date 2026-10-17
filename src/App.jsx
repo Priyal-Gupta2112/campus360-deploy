@@ -524,6 +524,15 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
     notify('Subject added.');
   }
 
+  function removeSubject(id, name) {
+    if (subjects.length <= 1) {
+      notify('You must keep at least one subject.');
+      return;
+    }
+    setSubjects(old => old.filter(s => s.id !== id));
+    notify(`Removed ${name}.`);
+  }
+
   return (
     <div className="page-stack">
       <div className="welcome-row">
