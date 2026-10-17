@@ -2889,3 +2889,41 @@ body.dark-mode .achievement-hero{background:linear-gradient(115deg,#14172f 0%,#2
 @media(max-width:1100px){.achievement-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.achievement-hero-art{flex-basis:160px;width:160px}.achievement-stats{gap:12px}.achievement-stat{padding:16px}}
 @media(max-width:760px){.achievement-hero{align-items:flex-start;padding:24px;min-height:auto}.achievement-hero-art{position:absolute;right:-20px;bottom:-20px;opacity:.35;transform:scale(.8)}.achievement-hero-copy{position:relative;z-index:1}.achievement-hero h1{font-size:30px}.achievement-hero p{max-width:100%;font-size:13px}.achievement-stats{grid-template-columns:1fr;gap:10px}.achievement-stat{padding:14px}.achievement-stat-icon{width:40px;height:40px;flex-basis:40px}.achievement-toolbar{align-items:flex-start;flex-direction:column}.achievement-add-button{width:100%;justify-content:center}.achievement-grid{grid-template-columns:1fr}.achievement-card{min-height:0}.achievement-form-row{grid-template-columns:1fr;gap:13px}.achievement-modal{padding:19px}.achievement-form-actions{flex-direction:column-reverse}.achievement-form-actions button{width:100%;justify-content:center}.achievement-filter-list{flex-wrap:nowrap;overflow-x:auto;padding-bottom:5px}.achievement-filter-list button{flex:0 0 auto}}
 @media(prefers-reduced-motion:reduce){.achievement-card{transition:none}}
+
+/* SkillSwap request + consent-based contact sharing */
+.skills-page .skill-requests-panel { border-color: color-mix(in srgb, var(--primary) 20%, var(--border-base)); }
+.skill-request-empty { display:flex; align-items:center; gap:14px; padding:22px; border:1px dashed var(--border-base); border-radius:14px; background:var(--bg-surface-alt); }
+.skill-request-empty .achievement-empty-icon { flex:0 0 46px; width:46px; height:46px; margin:0; }
+.skill-request-empty b { display:block; color:var(--text-main); margin-bottom:4px; }
+.skill-request-empty p { margin:0; font-size:13px; }
+.skill-request-list { display:grid; gap:12px; }
+.skill-request-card { padding:17px; border:1px solid var(--border-base); border-radius:15px; background:var(--bg-surface); min-width:0; }
+.skill-request-main { display:flex; justify-content:space-between; align-items:flex-start; gap:18px; }
+.skill-request-main > div { min-width:0; }
+.skill-request-main h3 { margin:10px 0 6px; font-size:15px; line-height:1.45; color:var(--text-main); }
+.skill-request-main p { margin:0 0 8px; color:var(--text-muted); font-size:13px; line-height:1.6; overflow-wrap:anywhere; }
+.skill-request-main small { color:var(--text-muted); font-size:12px; }
+.skill-request-main > button { flex:0 0 auto; white-space:nowrap; }
+.skill-shared-contact { margin-top:13px; padding:12px 14px; border-radius:12px; background:var(--primary-subtle); color:var(--text-main); }
+.skill-shared-contact b { display:flex; align-items:center; gap:7px; color:var(--primary); font-size:13px; }
+.skill-shared-contact p { margin:6px 0 0; font-size:12px; overflow-wrap:anywhere; }
+.skill-owner-note, .skill-privacy-note { display:flex; align-items:flex-start; gap:8px; color:var(--text-muted); font-size:12px; line-height:1.55; }
+.skill-owner-note { margin:10px 0 2px; }
+.skill-owner-note svg, .skill-privacy-note svg { flex:0 0 auto; color:var(--primary); }
+.skill-request-status { display:flex; flex-direction:column; align-items:flex-start; gap:10px; width:100%; margin-top:auto; }
+.skill-contact-revealed { display:flex; flex-direction:column; align-items:flex-start; gap:5px; width:100%; padding:12px; border-radius:12px; border:1px solid color-mix(in srgb, var(--primary) 25%, var(--border-base)); background:var(--bg-surface-alt); font-size:12px; overflow-wrap:anywhere; }
+.skill-contact-revealed b { color:var(--text-main); font-size:13px; }
+.skill-contact-revealed a { color:var(--primary); text-decoration:none; overflow-wrap:anywhere; }
+.skill-contact-revealed a:hover { text-decoration:underline; }
+.skill-contact-revealed small { color:var(--text-muted); }
+.skill-contact-revealed p { margin:4px 0 0; font-size:12px; }
+.skill-privacy-note { margin:2px 0 6px; padding:10px 12px; border-radius:10px; background:var(--bg-surface-alt); }
+.skill-card .full { display:flex; justify-content:center; align-items:center; gap:8px; margin-top:auto; }
+.skill-card { gap:8px; }
+.skill-card .skill-owner { margin-top:2px; }
+@media (max-width:700px) {
+  .skill-request-main { flex-direction:column; align-items:stretch; }
+  .skill-request-main > button { width:100%; justify-content:center; }
+  .skill-request-card { padding:14px; }
+  .skill-request-empty { align-items:flex-start; padding:16px; }
+}
