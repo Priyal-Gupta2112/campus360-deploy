@@ -21,7 +21,7 @@ const getInitialTheme = () => {
 
 const nav = [
   ['Dashboard', LayoutDashboard], ['Academic Planner', GraduationCap], ['Faculty', BookOpen], ['Timetable', CalendarDays], ['Rides', Bike],
-  ['Challenges', Trophy], ['Campus Guide', MapPin], ['Campus Pulse', CalendarDays], ['SkillSwap', Users],
+  ['Challenges', Trophy], ['Achievements', Award], ['Campus Guide', MapPin], ['Campus Pulse', CalendarDays], ['SkillSwap', Users],
 ]
 
 const read = (key, fallback) => {
@@ -69,6 +69,7 @@ function App() {
   const [subjects, setSubjects] = useState(() => read('c360_subjects', initialSubjects))
   const [rides, setRides] = useState(() => read('c360_rides', initialRides))
   const [challenges, setChallenges] = useState(() => read('c360_challenges', initialChallenges))
+  const [achievements, setAchievements] = useState(() => read('c360_achievements', []))
   const [eventsList, setEventsList] = useState(() => read('c360_events', events))
   const [profile, setProfile] = useState(() => read('c360_profile', { name: 'Alex Student', interests: 'Technology, Design', subjects: 'Programming, Mathematics' }))
 
@@ -129,6 +130,7 @@ const [loggedIn, setLoggedIn] = useState(() => {
   useEffect(() => save('c360_subjects', subjects), [subjects])
   useEffect(() => save('c360_rides', rides), [rides])
   useEffect(() => save('c360_challenges', challenges), [challenges])
+  useEffect(() => save('c360_achievements', achievements), [achievements])
   useEffect(() => save('c360_events', eventsList), [eventsList])
   useEffect(() => save('c360_assignments', assignments), [assignments])
 
@@ -329,7 +331,7 @@ const [loggedIn, setLoggedIn] = useState(() => {
     <div className="auth-brand"><div className="brand-mark"><img src="/logo.png" alt="Campus360 logo" onLoad={e => { const fallback = e.currentTarget.nextElementSibling; if (fallback) fallback.style.display = 'none' }} onError={e => { e.currentTarget.style.display = 'none' }}/><Sparkles className="brand-fallback" size={22}/></div><div><b>Campus<span>360</span></b><small>YOUR COLLEGE COMPANION</small></div></div><button type="button" className="theme-toggle auth-theme-toggle" onClick={() => setTheme(current => current === 'dark' ? 'light' : 'dark')} aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>{theme === 'dark' ? <Sun size={18}/> : <Moon size={18}/>}<span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span></button>
     <div className="auth-layout">
       <section className="auth-intro">
-        <section className="auth-intro">
+        <img src="/bg/1553752427phpvP6G9K_g.png" alt="VESIT college campus" className="campus-login-image" />
   <img
     src="/bg.png"
     alt="VESIT college campus"
@@ -388,6 +390,7 @@ const [loggedIn, setLoggedIn] = useState(() => {
         {page === 'Academic Planner' && <AcademicPlanner subjects={subjects} setSubjects={setSubjects} marksRows={marksRows} targetSgpa={targetSgpa} setTargetSgpa={setTargetSgpa} totalCredits={totalCredits} targetReachable={targetReachable} updateSubject={updateSubject} activeTab={activeTab} setActiveTab={setActiveTab} notify={notify}/>}
         {page === 'Rides' && <Rides rides={rides} requestRide={requestRide} updateRideRequest={updateRideRequest} profile={profile} newRide={newRide} setNewRide={setNewRide} addRide={addRide} search={search}/>}
         {page === 'Challenges' && <Challenges challenges={challenges} points={points} newChallenge={newChallenge} setNewChallenge={setNewChallenge} addChallenge={addChallenge} toggleChallenge={toggleChallenge}/>}
+        {page === 'Achievements' && <Achievements achievements={achievements} setAchievements={setAchievements} profile={profile} notify={notify}/>} 
         {page === 'Campus Guide' && <CampusGuide search={search} eventsList={eventsList} setEventsList={setEventsList} notify={notify}/>}
         {page === 'Campus Pulse' && <CampusPulse eventsList={eventsList} setEventsList={setEventsList} assignments={assignments} setAssignments={setAssignments} notify={notify}/>}
         {page === 'SkillSwap' && <SkillSwap skills={skills} setSkills={setSkills} skillRequests={skillRequests} setSkillRequests={setSkillRequests} profile={profile} notify={notify}/>} 
@@ -1361,6 +1364,50 @@ function CampusPulse({eventsList,setEventsList,assignments,setAssignments,notify
     {showAssignmentForm&&<div className="modal-backdrop" onClick={()=>setShowAssignmentForm(false)}><div className="modal modal-wide" onClick={e=>e.stopPropagation()}><div className="modal-head"><h2>Add assignment deadline</h2><button className="icon-button" onClick={()=>setShowAssignmentForm(false)}><X size={18}/></button></div><form className="modal-form" onSubmit={addAssignment}><label className="field-label">Assignment title<input value={assignmentForm.title} onChange={e=>setAssignmentForm({...assignmentForm,title:e.target.value})} required/></label><div className="form-two"><label className="field-label">Subject<input value={assignmentForm.subject} onChange={e=>setAssignmentForm({...assignmentForm,subject:e.target.value})} required/></label><label className="field-label">Due date<input type="date" value={assignmentForm.due} onChange={e=>setAssignmentForm({...assignmentForm,due:e.target.value})} required/></label></div><label className="field-label">Priority<select value={assignmentForm.priority} onChange={e=>setAssignmentForm({...assignmentForm,priority:e.target.value})}><option>High</option><option>Medium</option><option>Low</option></select></label><div className="modal-actions"><button type="button" className="secondary" onClick={()=>setShowAssignmentForm(false)}>Cancel</button><button className="primary">Save deadline</button></div></form></div></div>}
   </div>
 }
+
+function Achievements({ achievements, setAchievements, profile, notify }) {
+  const [showForm, setShowForm] = useState(false)
+  const [filter, setFilter] = useState('All')
+  const [query, setQuery] = useState('')
+  const [form, setForm] = useState({ title: '', category: 'Award', issuer: '', date: new Date().toISOString().slice(0, 10), level: 'Other', credits: '', description: '', proofUrl: '' })
+  const categories = ['All', 'Academic Credits', 'Award', 'Hackathon', 'Competition', 'Certification', 'Sports', 'Arts & Culture', 'Volunteering', 'Research', 'Other']
+  const visible = achievements.filter(item => (filter === 'All' || item.category === filter) && `${item.title} ${item.issuer} ${item.description} ${item.owner}`.toLowerCase().includes(query.toLowerCase()))
+  const totalCredits = achievements.filter(item => item.category === 'Academic Credits').reduce((sum, item) => sum + (Number(item.credits) || 0), 0)
+  const update = (key, value) => setForm(current => ({ ...current, [key]: value }))
+  function submit(e) {
+    e.preventDefault()
+    if (!form.title.trim()) return
+    const item = { ...form, id: Date.now(), title: form.title.trim(), issuer: form.issuer.trim(), description: form.description.trim(), owner: profile?.name || 'Campus360 student', createdAt: new Date().toISOString() }
+    setAchievements(current => [item, ...current])
+    setForm({ title: '', category: 'Award', issuer: '', date: new Date().toISOString().slice(0, 10), level: 'Other', credits: '', description: '', proofUrl: '' })
+    setShowForm(false)
+    notify('Achievement added to your Campus360 profile.')
+  }
+  function remove(id) {
+    if (!window.confirm('Delete this achievement from this browser?')) return
+    setAchievements(current => current.filter(item => item.id !== id))
+    notify('Achievement removed.')
+  }
+  const iconFor = category => category === 'Academic Credits' ? <BookOpen size={18}/> : category === 'Hackathon' ? <Sparkles size={18}/> : category === 'Certification' ? <ShieldCheck size={18}/> : category === 'Sports' ? <Trophy size={18}/> : <Award size={18}/>
+  return <div className="page-stack achievements-page">
+    <div className="achievement-hero">
+      <div className="achievement-hero-copy"><div className="eyebrow"><Award size={14}/> YOUR GROWTH, ALL IN ONE PLACE</div><h1>Achievements</h1><p>Celebrate every win — from academic credits and certifications to hackathons, awards, sports, volunteering and milestones beyond campus.</p><div className="achievement-hero-pills"><span><Check size={14}/> College or personal</span><span><ShieldCheck size={14}/> Your story, your progress</span></div></div>
+      <div className="achievement-hero-art"><div className="achievement-orbit orbit-one"/><div className="achievement-orbit orbit-two"/><div className="achievement-trophy"><Trophy size={48}/></div><span className="achievement-spark spark-one">✦</span><span className="achievement-spark spark-two">✧</span><span className="achievement-spark spark-three">✦</span></div>
+    </div>
+    <div className="achievement-stats">
+      <div className="achievement-stat"><span className="achievement-stat-icon purple"><Award size={19}/></span><div><small>Total achievements</small><strong>{achievements.length}</strong><span>Every milestone counts</span></div></div>
+      <div className="achievement-stat"><span className="achievement-stat-icon blue"><Trophy size={19}/></span><div><small>Wins & recognition</small><strong>{achievements.filter(a => ['Award','Hackathon','Competition','Sports','Arts & Culture'].includes(a.category)).length}</strong><span>Competitions and awards</span></div></div>
+      <div className="achievement-stat"><span className="achievement-stat-icon mint"><BookOpen size={19}/></span><div><small>Academic credits</small><strong>{totalCredits}</strong><span>Credits recorded by you</span></div></div>
+    </div>
+    <section className="panel achievement-toolbar-panel"><div className="achievement-toolbar"><div><h2>Your achievement wall</h2><p className="muted">A personal portfolio of the things you have accomplished.</p></div><button className="primary achievement-add-button" onClick={() => setShowForm(true)}><Plus size={17}/> Add achievement</button></div>
+      <div className="achievement-filters"><label className="achievement-search"><Search size={16}/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search achievements..." aria-label="Search achievements"/></label><div className="achievement-filter-list">{categories.map(category => <button key={category} className={filter === category ? 'active' : ''} onClick={() => setFilter(category)}>{category}</button>)}</div></div>
+      {visible.length === 0 ? <div className="achievement-empty"><div className="achievement-empty-icon"><Award size={28}/></div><h3>{achievements.length ? 'No matches found' : 'Your next big thing starts here'}</h3><p>{achievements.length ? 'Try another category or search term.' : 'Add your first achievement — a hackathon, course credit, certificate, award or any milestone you are proud of.'}</p>{!achievements.length && <button className="primary" onClick={() => setShowForm(true)}><Plus size={16}/> Add your first achievement</button>}</div> : <div className="achievement-grid">{visible.map(item => <article className="achievement-card" key={item.id}><div className="achievement-card-top"><span className={`achievement-card-icon category-${String(item.category).toLowerCase().replace(/[^a-z]+/g,'-')}`}>{iconFor(item.category)}</span><span className="achievement-category">{item.category}</span><button className="achievement-delete" onClick={() => remove(item.id)} title="Delete achievement" aria-label={`Delete ${item.title}`}><X size={16}/></button></div><h3>{item.title}</h3><p className="achievement-issuer">{item.issuer || 'Independent achievement'}</p>{item.description && <p className="achievement-description">{item.description}</p>}<div className="achievement-meta">{item.date && <span><CalendarDays size={14}/>{new Date(`${item.date}T00:00:00`).toLocaleDateString(undefined,{month:'short',year:'numeric'})}</span>}<span><Users size={14}/>{item.owner || 'Campus360 student'}</span></div><div className="achievement-card-bottom"><span className="achievement-level">{item.level || 'Other'}</span>{item.category === 'Academic Credits' && item.credits !== '' && <strong>{item.credits} credits</strong>}{item.proofUrl && <a href={item.proofUrl} target="_blank" rel="noreferrer">View proof <ArrowRight size={13}/></a>}</div></article>)}</div>}
+      <p className="achievement-storage-note"><ShieldCheck size={14}/> Prototype note: achievements are saved in this browser on this device. Shared cross-user profiles need database storage.</p>
+    </section>
+    {showForm && <div className="modal-backdrop" onClick={() => setShowForm(false)}><div className="modal achievement-modal" role="dialog" aria-modal="true" aria-labelledby="achievement-modal-title" onClick={e => e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow"><Sparkles size={13}/> ADD TO YOUR STORY</span><h2 id="achievement-modal-title">Add an achievement</h2><p className="muted">Big or small, it deserves a place here.</p></div><button className="icon-button" type="button" onClick={() => setShowForm(false)} aria-label="Close form"><X size={18}/></button></div><form className="achievement-form" onSubmit={submit}><label className="field-label">Achievement title *<input required maxLength={100} value={form.title} onChange={e => update('title',e.target.value)} placeholder="e.g. First place at a hackathon"/></label><div className="achievement-form-row"><label className="field-label">Category<select value={form.category} onChange={e => update('category',e.target.value)}>{categories.filter(c => c !== 'All').map(c => <option key={c}>{c}</option>)}</select></label><label className="field-label">Level / type<select value={form.level} onChange={e => update('level',e.target.value)}>{['Personal','College','Inter-college','University','State','National','International','Online','Other'].map(v => <option key={v}>{v}</option>)}</select></label></div><div className="achievement-form-row"><label className="field-label">Awarded by / organisation<input maxLength={100} value={form.issuer} onChange={e => update('issuer',e.target.value)} placeholder="e.g. Smart India Hackathon"/></label><label className="field-label">Date<input type="date" value={form.date} onChange={e => update('date',e.target.value)}/></label></div>{form.category === 'Academic Credits' && <label className="field-label">Credits earned<input type="number" min="0" max="999" step="0.5" value={form.credits} onChange={e => update('credits',e.target.value)} placeholder="e.g. 2"/></label>}<label className="field-label">Description<textarea maxLength={800} rows={3} value={form.description} onChange={e => update('description',e.target.value)} placeholder="What did you achieve? Add a little context..."/></label><label className="field-label">Proof link (optional)<input type="url" value={form.proofUrl} onChange={e => update('proofUrl',e.target.value)} placeholder="https://certificate-or-project-link..."/><small>Add a public certificate, portfolio or project link if available.</small></label><div className="achievement-form-actions"><button type="button" className="secondary" onClick={() => setShowForm(false)}>Cancel</button><button type="submit" className="primary"><Award size={16}/> Save achievement</button></div></form></div></div>}
+  </div>
+}
+
 
 function SkillSwap({skills,setSkills,skillRequests,setSkillRequests,profile,notify}) {
   const [showForm,setShowForm]=useState(false)
