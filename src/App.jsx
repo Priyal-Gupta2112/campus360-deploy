@@ -612,8 +612,8 @@ function CampusGuide({ search, eventsList, setEventsList, notify }) {
   name: 'VESIT Rail / Transport Help',
   category: 'Transport',
   place: 'Student support directory',
-  detail: 'Access the official VESIT Rail portal for railway-related student services.',
-  url: 'https://rail.vesit.ves.ac.in/'
+  detail: 'Open the official VESIT Rail portal for railway-related student services.',
+url: 'https://rail.vesit.ves.ac.in/'
 }
     {name:'Reception / Main Desk',category:'Administration',place:'Main entrance',detail:'First point of contact for visitors, directions and general enquiries.'},
     {name:'VES Council',category:'Student bodies',place:'Student council',detail:'Student representation, campus initiatives and student-facing announcements. Confirm current office-bearers with the college.'},
@@ -646,22 +646,21 @@ function CampusGuide({ search, eventsList, setEventsList, notify }) {
     >
       {/* Keep your existing modal content here */}
 
-      {selected.url && (
-        <p style={{ marginTop: '12px' }}>
-          <a
-            href={selected.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              color: '#5145f5',
-              fontWeight: 600,
-              textDecoration: 'underline'
-            }}
-          >
-            Open VESIT Rail Portal →
-          </a>
-        </p>
-      )}
+   {selected.url && (
+  <a
+    href={selected.url}
+    target="_blank"
+    rel="noopener noreferrer"
+    style={{
+      display: 'inline-block',
+      marginTop: '12px',
+      color: '#5145f5',
+      fontWeight: 600
+    }}
+  >
+    Open VESIT Rail Portal →
+  </a>
+)}
 
       {/* Keep your existing Close details button here */}
     </div>
