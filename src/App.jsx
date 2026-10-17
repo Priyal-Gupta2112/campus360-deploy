@@ -855,16 +855,42 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
       )}
 
       {/* Subjects & Credits Editor */}
+     {/* Subjects & Credits Editor */}
       {activeTab === 'Profile' && (
         <section className="panel">
-          <SectionTitle title="Subjects & Credits" sub="Configure credits, internal marks, and target cutoffs."/>
+          <SectionTitle title="Subjects & Credits" sub="Configure credits, internal marks, target cutoffs, or remove subjects."/>
           <div className="subject-editor" style={{ display: 'grid', gap: '10px' }}>
             {subjects.map(s => (
-              <div className="subject-edit-row" key={s.id} style={{ display: 'grid', gridTemplateColumns: '1.2fr repeat(3, 1fr)', gap: '10px', alignItems: 'center', padding: '12px', background: 'var(--bg-surface-alt)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-base)' }}>
-                <b>{s.name}</b>
+              <div 
+                className="subject-edit-row" 
+                key={s.id} 
+                style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: '1.2fr repeat(3, 1fr) auto', 
+                  gap: '10px', 
+                  alignItems: 'end', 
+                  padding: '12px', 
+                  background: 'var(--bg-surface-alt)', 
+                  borderRadius: 'var(--radius-sm)', 
+                  border: '1px solid var(--border-base)' 
+                }}
+              >
+                <div>
+                  <small style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Subject Name</small>
+                  <b>{s.name}</b>
+                </div>
                 <label className="field-label">Credits<input type="number" min="1" max="10" value={s.credits} onChange={e => updateSubject(s.id, 'credits', e.target.value)}/></label>
                 <label className="field-label">Internal<input type="number" min="0" max="100" value={s.internal} onChange={e => updateSubject(s.id, 'internal', e.target.value)}/></label>
                 <label className="field-label">Cutoff<input type="number" min="0" max="100" value={s.cutoff} onChange={e => updateSubject(s.id, 'cutoff', e.target.value)}/></label>
+                <button 
+                  type="button" 
+                  className="secondary compact" 
+                  style={{ color: 'var(--danger-text)', borderColor: 'var(--danger-border)', height: '36px', padding: '0 10px' }} 
+                  title={`Delete ${s.name}`}
+                  onClick={() => removeSubject(s.id, s.name)}
+                >
+                  <X size={15}/> Remove
+                </button>
               </div>
             ))}
           </div>
@@ -874,10 +900,7 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
           </form>
         </section>
       )}
-
-    </div>
-  );
-}
+      
 
 const rideMarkerIcon = L.divIcon({ className: 'ride-map-marker', html: '<span></span>', iconSize: [22,22], iconAnchor: [11,11] })
 function Rides({ rides, requestRide, updateRideRequest, profile, newRide, setNewRide, addRide, search }) {
