@@ -331,7 +331,7 @@ const [loggedIn, setLoggedIn] = useState(() => {
       <section className="auth-intro">
         <section className="auth-intro">
   <img
-    src="/images/vesit-campus.png"
+    src="/bg.png"
     alt="VESIT college campus"
     className="campus-login-image"
   />
