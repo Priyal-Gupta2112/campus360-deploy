@@ -1163,7 +1163,6 @@ function Timetable({ timetable, setTimetable, notify }) {
     </div>
   );
 }
-
 function Challenges({ challenges, points, newChallenge, setNewChallenge, addChallenge, toggleChallenge }) {
   const [showPost, setShowPost] = useState(false)
   const [detailChallenge, setDetailChallenge] = useState(null)
