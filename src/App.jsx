@@ -457,10 +457,25 @@ function Rides({ rides, requestRide, updateRideRequest, profile, newRide, setNew
 
 function Timetable({ timetable, setTimetable, notify }) {
   const [fileName, setFileName] = useState(() => read('c360_timetable_filename', ''));
-  const [selectedBranch, setSelectedBranch] = useState(() => read('c360_timetable_selected_branch', 'D2A'));
+  const [selectedBranch, setSelectedBranch] = useState(() => read('c360_timetable_selected_branch', 'All'));
   const [rows, setRows] = useState(() => read('c360_timetable_rows', []));
   
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+  const clean = v => String(v ?? '').replace(/\s+/g, ' ').trim();
+  const norm = v => clean(v).toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  const dayName = value => {
+    const v = norm(value);
+    const map = {
+      mon: 'Monday', monday: 'Monday',
+      tue: 'Tuesday', tues: 'Tuesday', tuesday: 'Tuesday',
+      wed: 'Wednesday', wednes: 'Wednesday', wednesday: 'Wednesday',
+      thu: 'Thursday', thur: 'Thursday', thurs: 'Thursday', thursday: 'Thursday',
+      fri: 'Friday', friday: 'Friday'
+    };
+    return map[v] || '';
+  };
 
   async function upload(e) {
     const file = e.target.files?.[0];
@@ -468,109 +483,117 @@ function Timetable({ timetable, setTimetable, notify }) {
 
     try {
       const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: 'array', cellStyles: true });
+      const workbook = XLSX.read(buffer, { type: 'array' });
       if (!workbook.SheetNames.length) throw new Error('Excel workbook has no sheets.');
 
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1:O65');
-      const merges = sheet['!merges'] || [];
+      let parsedEntries = [];
+      const discoveredBranches = new Set();
 
-      // Helper to read any cell, resolving merged ranges
-      const getVal = (r, c) => {
-        for (const m of merges) {
-          if (r >= m.s.r && r <= m.e.r && c >= m.s.c && c <= m.e.c) {
-            const tl = XLSX.utils.encode_cell({ r: m.s.r, c: m.s.c });
-            return sheet[tl]?.v ?? sheet[tl]?.w ?? '';
-          }
+      for (const sheetName of workbook.SheetNames) {
+        const sheet = workbook.Sheets[sheetName];
+        const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        if (!matrix || !matrix.length) continue;
+
+        let sheetBranch = '';
+        const sheetBranchMatch = sheetName.match(/(?:FE|SE|TE|BE)?\s*([A-Za-z]+(?:\s*[A-Za-z]+)?(?:\s*-\s*[A-Z0-9])?)/i);
+        if (sheetBranchMatch && sheetBranchMatch[1] && !['sheet', 'table', 'page'].includes(sheetBranchMatch[1].toLowerCase())) {
+          sheetBranch = sheetName.trim();
         }
-        const cell = sheet[XLSX.utils.encode_cell({ r, c })];
-        return cell?.v ?? cell?.w ?? '';
-      };
 
-      const daysConfig = [
-        { name: 'Monday', rowKeywords: ['MONDAY'] },
-        { name: 'Tuesday', rowKeywords: ['TUESDAY'] },
-        { name: 'Wednesday', rowKeywords: ['WEDNESDAY'] },
-        { name: 'Thursday', rowKeywords: ['THURSDAY'] },
-        { name: 'Friday', rowKeywords: ['FRIDAY'] }
-      ];
+        let dayCols = [];
+        let headerRowIndex = -1;
 
-      // Locate day headers dynamically across rows
-      const dayBlocks = [];
-      for (let r = range.s.r; r <= range.e.r; r++) {
-        const rowVal = String(getVal(r, 0) || getVal(r, 8) || '').toUpperCase();
-        for (const d of daysConfig) {
-          if (d.rowKeywords.some(k => rowVal.includes(k))) {
-            dayBlocks.push({ day: d.name, headerRow: r });
+        for (let r = 0; r < Math.min(matrix.length, 15); r++) {
+          const row = matrix[r];
+          const matches = row.map((cell, colIdx) => ({ day: dayName(cell), colIdx })).filter(x => Boolean(x.day));
+          if (matches.length >= 2) {
+            dayCols = matches;
+            headerRowIndex = r;
             break;
           }
         }
-      }
 
-      if (!dayBlocks.length) {
-        throw new Error('Could not find weekday headers in the timetable.');
-      }
+        if (headerRowIndex >= 0 && dayCols.length >= 2) {
+          let currentDetectedBranch = sheetBranch || 'General';
 
-      let parsed = [];
-      const discoveredBranches = new Set();
+          for (let r = headerRowIndex + 1; r < matrix.length; r++) {
+            const row = matrix[r];
+            if (!row || !row.length) continue;
 
-      dayBlocks.forEach((block, idx) => {
-        const nextBlock = dayBlocks[idx + 1];
-        const endRow = nextBlock ? nextBlock.headerRow - 1 : Math.min(block.headerRow + 10, range.e.r);
-        const divRow = block.headerRow + 1;
-        const lecturesStartRow = divRow + 1;
+            const branchRowMatch = row.join(' ').match(/(?:branch|division|class|div|dept)?:?\s*(FE\s*[A-Z\s]+(?:\s*Div\s*[A-Z0-9])?|[A-Z]{2,5}(?:\s*-\s*[A-Z0-9])?)/i);
+            if (branchRowMatch && branchRowMatch[1] && branchRowMatch[1].length > 2 && !dayName(branchRowMatch[1])) {
+              currentDetectedBranch = clean(branchRowMatch[1]);
+              discoveredBranches.add(currentDetectedBranch);
+              continue;
+            }
 
-        // Group A: time col 0 (Col A), divisions cols 1 to 6 (B-G)
-        // Group B: time col 8 (Col I), divisions cols 9 to 14 (J-O)
-        const groups = [
-          { timeCol: 0, divCols: [1, 2, 3, 4, 5, 6] },
-          { timeCol: 8, divCols: [9, 10, 11, 12, 13, 14] }
-        ];
+            const timeVal = clean(row[0]) || clean(row[1]);
+            const isTime = /\d{1,2}[:.]\d{2}|\b(?:am|pm)\b/i.test(timeVal);
+            const time = isTime ? timeVal : 'Regular Slot';
 
-        groups.forEach(grp => {
-          grp.divCols.forEach(c => {
-            const rawDivHeader = String(getVal(divRow, c) || '').trim();
-            if (!rawDivHeader) return;
+            for (const { day, colIdx } of dayCols) {
+              const cellVal = clean(row[colIdx]);
+              if (!cellVal || cellVal.length < 2 || dayName(cellVal)) continue;
 
-            // Extract Division (e.g. D2A, D1ADA, D5B, D3, D4A)
-            const divMatch = rawDivHeader.replace(/\n/g, ' ').match(/\b(D\d+[A-Z]*)\b/i);
-            const branchName = divMatch ? divMatch[1].toUpperCase() : rawDivHeader.split(/\s+/)[0];
-            
-            // Extract Room (e.g. 524, 518, B41, B22)
-            const roomMatch = rawDivHeader.match(/\b([B\d]{2,4})\b/);
-            const defaultRoom = roomMatch ? roomMatch[1] : '';
+              const roomMatch = cellVal.match(/(?:room|lab|hall|r-)\s*[:#]?\s*([A-Za-z0-9-]+)/i);
+              const room = roomMatch ? roomMatch[0] : '';
+              const subject = cellVal.replace(/(?:room|lab|hall|r-)\s*[:#]?\s*([A-Za-z0-9-]+)/i, '').trim();
 
-            discoveredBranches.add(branchName);
+              const branch = currentDetectedBranch || 'General FE';
+              discoveredBranches.add(branch);
 
-            for (let r = lecturesStartRow; r <= endRow; r++) {
-              const timeSlot = String(getVal(r, grp.timeCol) || '').trim().replace(/\s+/g, ' ');
-              if (!timeSlot || timeSlot.toUpperCase().includes('BREAK') || !/\d/.test(timeSlot)) continue;
-
-              const cellVal = String(getVal(r, c) || '').trim();
-              if (!cellVal || cellVal.toUpperCase() === 'BREAK' || cellVal.length < 2) continue;
-
-              parsed.push({
-                id: `${block.day}-${branchName}-${r}-${c}-${Math.random()}`,
-                day: block.day,
-                time: timeSlot,
-                branch: branchName,
-                subject: cellVal,
-                room: defaultRoom
+              parsedEntries.push({
+                id: `${sheetName}-${r}-${colIdx}-${Math.random()}`,
+                day,
+                time,
+                subject: subject || cellVal,
+                room,
+                branch: branch.trim(),
               });
             }
-          });
-        });
-      });
+          }
+        } else {
+          const normHeaders = (matrix[0] || []).map(norm);
+          const findIdx = keys => normHeaders.findIndex(h => keys.some(k => h.includes(k)));
 
-      if (!parsed.length) {
-        throw new Error('No classes could be parsed. Please verify the spreadsheet format.');
+          const dayIdx = findIdx(['day', 'weekday']);
+          const timeIdx = findIdx(['time', 'slot', 'period', 'timing']);
+          const subIdx = findIdx(['subject', 'lecture', 'course', 'activity']);
+          const branchIdx = findIdx(['branch', 'div', 'class', 'department', 'section']);
+          const roomIdx = findIdx(['room', 'venue', 'lab']);
+
+          if (dayIdx >= 0 && subIdx >= 0) {
+            for (let r = 1; r < matrix.length; r++) {
+              const row = matrix[r];
+              const d = dayName(row[dayIdx]);
+              const s = clean(row[subIdx]);
+              if (!d || !s) continue;
+
+              const b = (branchIdx >= 0 && clean(row[branchIdx])) ? clean(row[branchIdx]) : (sheetBranch || 'General FE');
+              discoveredBranches.add(b);
+
+              parsedEntries.push({
+                id: `${sheetName}-${r}-${Math.random()}`,
+                day: d,
+                time: (timeIdx >= 0 && clean(row[timeIdx])) ? clean(row[timeIdx]) : 'Regular Slot',
+                subject: s,
+                room: roomIdx >= 0 ? clean(row[roomIdx]) : '',
+                branch: b.trim(),
+              });
+            }
+          }
+        }
       }
 
-      const branchList = [...discoveredBranches].sort();
-      const defaultBranch = branchList.includes('D2A') ? 'D2A' : (branchList[0] || 'All');
+      if (!parsedEntries.length) {
+        throw new Error('Could not identify schedule entries. Please ensure your sheet includes day names (Mon-Fri) and subjects.');
+      }
 
-      setRows(parsed);
-      save('c360_timetable_rows', parsed);
+      const branchList = [...discoveredBranches].filter(Boolean);
+      const defaultBranch = branchList.length ? branchList[0] : 'All';
+
+      setRows(parsedEntries);
+      save('c360_timetable_rows', parsedEntries);
 
       setSelectedBranch(defaultBranch);
       save('c360_timetable_selected_branch', defaultBranch);
@@ -578,15 +601,16 @@ function Timetable({ timetable, setTimetable, notify }) {
       setFileName(file.name);
       save('c360_timetable_filename', file.name);
 
-      notify(`Loaded timetable! Found ${branchList.length} divisions (${branchList.join(', ')}) with ${parsed.length} total lecture slots.`);
+      notify(`Timetable loaded successfully! Found ${branchList.length || 1} branches and ${parsedEntries.length} lectures.`);
     } catch (err) {
-      notify(err.message || 'Error processing timetable sheet.');
+      notify(err.message || 'Error processing spreadsheet.');
     }
     e.target.value = '';
   }
 
   const branchOptions = useMemo(() => {
-    return [...new Set(rows.map(r => r.branch).filter(Boolean))].sort();
+    const list = [...new Set(rows.map(r => r.branch).filter(Boolean))];
+    return list.sort();
   }, [rows]);
 
   const filteredSchedule = useMemo(() => {
@@ -602,9 +626,9 @@ function Timetable({ timetable, setTimetable, notify }) {
     <div className="page-stack">
       <div className="welcome-row">
         <div>
-          <div className="eyebrow"><CalendarDays size={14}/> FIRST YEAR SCHEDULE</div>
+          <div className="eyebrow"><CalendarDays size={14}/> WEEKLY SCHEDULE</div>
           <h1>Online Timetable</h1>
-          <p className="muted">Upload your FE timetable spreadsheet to view your division's classes from Monday to Friday.</p>
+          <p className="muted">Upload your college timetable sheet and select your branch to view your Monday–Friday schedule.</p>
         </div>
         {rows.length > 0 && <Badge tone="purple">{filteredSchedule.length} lectures scheduled</Badge>}
       </div>
@@ -612,12 +636,12 @@ function Timetable({ timetable, setTimetable, notify }) {
       <section className="panel timetable-control-panel">
         <div className="timetable-top-controls">
           <div>
-            <h2 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '4px' }}>Import Spreadsheet</h2>
+            <h2 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '4px' }}>Import Timetable</h2>
             <p className="muted" style={{ fontSize: '12px', marginTop: 0 }}>
-              VESIT FE Timetable (.xlsx, .xls)
+              Supports Excel (.xlsx, .xls) and CSV files.
             </p>
             <label className="primary upload-label" style={{ marginTop: '10px' }}>
-              <Plus size={15}/> Choose File
+              <Plus size={15}/> Choose Spreadsheet
               <input type="file" accept=".xlsx,.xls,.csv" onChange={upload} hidden/>
             </label>
             {fileName && (
@@ -629,28 +653,29 @@ function Timetable({ timetable, setTimetable, notify }) {
 
           <div className="branch-selector-box">
             <label className="field-label" style={{ fontWeight: 700 }}>
-              Select Division
+              Select Branch / Division
               <select
                 value={selectedBranch}
                 onChange={e => handleBranchChange(e.target.value)}
                 disabled={!branchOptions.length}
                 style={{ minWidth: '220px', height: '40px', marginTop: '4px' }}
               >
-                {branchOptions.length > 1 && <option value="All">All Divisions (Overview)</option>}
+                {branchOptions.length > 1 && <option value="All">All Branches (Overview)</option>}
                 {branchOptions.map(b => (
-                  <option key={b} value={b}>Division {b}</option>
+                  <option key={b} value={b}>{b}</option>
                 ))}
-                {!branchOptions.length && <option value="All">Upload timetable to choose division</option>}
+                {!branchOptions.length && <option value="All">No timetable uploaded</option>}
               </select>
             </label>
           </div>
         </div>
       </section>
 
-      {/* Monday - Friday Schedule Cards */}
       <div className="timetable-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
         {days.map(day => {
-          const dayItems = filteredSchedule.filter(r => r.day === day);
+          const dayItems = filteredSchedule
+            .filter(r => r.day === day)
+            .sort((a, b) => a.time.localeCompare(b.time));
 
           return (
             <section className="panel day-card" key={day} style={{ display: 'flex', flexDirection: 'column' }}>
@@ -678,13 +703,13 @@ function Timetable({ timetable, setTimetable, notify }) {
                         <strong style={{ fontSize: '11px', color: 'var(--primary)' }}>{item.time}</strong>
                         {item.room && (
                           <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                            <MapPin size={11}/> Classroom {item.room}
+                            <MapPin size={11}/> {item.room}
                           </span>
                         )}
                       </div>
-                      <b style={{ fontSize: '12px', color: 'var(--text-main)', lineHeight: 1.4, whiteSpace: 'pre-line' }}>{item.subject}</b>
-                      {selectedBranch === 'All' && (
-                        <small style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Div {item.branch}</small>
+                      <b style={{ fontSize: '13px', color: 'var(--text-main)', lineHeight: 1.4 }}>{item.subject}</b>
+                      {selectedBranch === 'All' && item.branch && (
+                        <small style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{item.branch}</small>
                       )}
                     </div>
                   ))}
@@ -886,69 +911,6 @@ function FacultyDirectory({ search }) {
   </div>
 }
 
-function CampusGuide({ search, eventsList, setEventsList, notify }) {
-  const [eventFilter,setEventFilter] = useState('All')
-  const [selected,setSelected] = useState(null)
-  const [clubFilter,setClubFilter] = useState('All')
-  const states=['Registration Open','Starting Soon','Live Now','Event Ended']
-  const locations=[
-    {name:'Central Library',category:'Facilities',place:'Library building',detail:'Open the official VESIT Library page for library facilities and information.',url:'https://vesit.ves.ac.in/infrastructure/library/',linkLabel:'Open VESIT Library Website'},
-    {name:'Campus Canteen',category:'Facilities',place:'Student facilities area',detail:'Open the official VESIT Canteen page for canteen facilities and information.',url:'https://vesit.ves.ac.in/infrastructure/canteen/',linkLabel:'Open VESIT Canteen Website'},
-    {name:'Principal / Director Office',category:'Administration',place:'Administration block',detail:'For formal academic and administrative matters. Confirm office room and visiting hours with VESIT.'},
-    {
-  name: 'VESIT Rail / Transport Help',
-  category: 'Transport',
-  place: 'Student support directory',
-  detail: 'Open the official VESIT Rail portal for railway-related student services.',
-url: 'https://rail.vesit.ves.ac.in/'
-    },
-    {name:'Reception / Main Desk',category:'Administration',place:'Main entrance',detail:'Open the official VESIT contact page for reception and general enquiries.',url:'https://vesit.ves.ac.in/footer/contact-us/',linkLabel:'Open VESIT Contact Page'},
-    {name:'VES Council',category:'Student bodies',place:'Student council',detail:'Student representation, campus initiatives and student-facing announcements. Confirm current office-bearers with the college.'},
-  ]
-  const clubs=[
-    {name:'Coding / Technical Club',category:'Technical',president:'To be confirmed by college',detail:'Technical workshops, peer coding and project sessions.'},
-    {name:'Robotics / Electronics Club',category:'Technical',president:'To be confirmed by college',detail:'Hands-on hardware, robotics and engineering activities.'},
-    {name:'Cultural Committee',category:'Cultural',president:'To be confirmed by college',detail:'Cultural events, performances and campus celebrations.'},
-    {name:'Literary / Debate Club',category:'Literary',president:'To be confirmed by college',detail:'Writing, speaking, debate and reading activities.'},
-    {name:'Sports Committee',category:'Sports',president:'To be confirmed by college',detail:'Sports activities, tournaments and student fitness.'},
-    {name:'Photography / Media Club',category:'Creative',president:'To be confirmed by college',detail:'Photography, design, event coverage and creative media.'},
-  ]
-  const shownContacts=locations.filter(x=>`${x.name} ${x.category} ${x.place} ${x.detail}`.toLowerCase().includes(search.toLowerCase()))
-  const shownEvents=eventsList.filter(e=>eventFilter==='All'||e.state===eventFilter)
-  const shownClubs=clubs.filter(c=>(clubFilter==='All'||c.category===clubFilter)&&`${c.name} ${c.category} ${c.president}`.toLowerCase().includes(search.toLowerCase()))
-  function cycleEvent(id){setEventsList(old=>old.map(e=>{if((e.id||e.name)!==id)return e;const i=states.indexOf(e.state);return {...e,state:states[(i+1+states.length)%states.length]}}));notify('Event status updated in this prototype.')}
-  return <div className="page-stack"><div className="welcome-row"><div><div className="eyebrow"><MapPin size={14}/> KNOW YOUR CAMPUS</div><h1>Campus directory & guide</h1><p className="muted">Find campus facilities, student bodies, clubs and events.</p></div><Badge tone="green">Directory</Badge></div>
-    <section className="panel"><SectionTitle title="Campus facilities and contacts" sub="Some room numbers and contact details need official confirmation."/><div className="directory-grid">{shownContacts.map((c,i)=><button className="directory-card" key={c.name} onClick={()=>setSelected(c)}><span className={`directory-icon directory-${i%4}`}><MapPin size={19}/></span><b>{c.name}</b><small>{c.place}</small><p>{c.detail}</p><em>View details <ArrowRight size={14}/></em></button>)}</div></section>
-    <section className="panel"><SectionTitle title="What's happening on campus?" sub="Browse events and preview status changes."/><div className="filter-row">{['All',...states].map(s=><button key={s} className={eventFilter===s?'active':''} onClick={()=>setEventFilter(s)}>{s}</button>)}</div>{shownEvents.length?<div className="event-list">{shownEvents.map((ev,i)=><div className="event-row event-row-wide" key={ev.id||ev.name}><div className={`event-date ed-${i%3}`}><CalendarDays size={20}/><small>{ev.time.split('·')[0].trim().toUpperCase()}</small></div><div className="event-info"><b>{ev.name}</b><small>{ev.time}</small><Badge tone={ev.state==='Live Now'?'green':ev.state==='Event Ended'?'slate':ev.state==='Starting Soon'?'amber':'purple'}>{ev.state}</Badge></div><button className="secondary compact" onClick={()=>cycleEvent(ev.id||ev.name)}>Update status <ArrowRight size={14}/></button></div>)}</div>:<p className="muted">No events match this filter. Open Campus Pulse to add an event.</p>}</section>
-    <section className="panel"><SectionTitle title={`VESIT clubs & student communities (${clubs.length} sample listings)`} sub="Club names and presidents must be verified against the official current college directory."/><div className="filter-row">{['All','Technical','Cultural','Literary','Sports','Creative'].map(s=><button key={s} className={clubFilter===s?'active':''} onClick={()=>setClubFilter(s)}>{s}</button>)}</div><div className="directory-grid">{shownClubs.map((c,i)=><div className="directory-card club-card" key={c.name}><span className={`directory-icon directory-${i%4}`}><Users size={19}/></span><b>{c.name}</b><small>{c.category}</small><p>{c.detail}</p><div className="club-president"><strong>President</strong><span>{c.president}</span></div><button className="text-button" onClick={()=>notify('Club contact information needs verification by the college admin.')}>Contact club <ArrowRight size={14}/></button></div>)}</div></section>
-    <section className="panel"><SectionTitle title="Campus location guide" sub="OpenStreetMap view centred approximately on the VESIT campus area."/><div className="leaflet-map-wrap"><MapContainer center={[19.0445,72.8992]} zoom={15} scrollWheelZoom={false} style={{height:'330px',width:'100%'}}><TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/><Marker position={[19.0445,72.8992]} icon={rideMarkerIcon}><Popup>VESIT campus area (approximate). Confirm exact building locations locally.</Popup></Marker></MapContainer></div><p className="map-disclaimer">Map markers and directory information are prototype placeholders; verify official details before public use.</p></section>
-    {selected && (
-      <div className="modal-backdrop" onClick={() => setSelected(null)}>
-        <div className="modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
-          <div className="modal-head">
-            <Badge tone="purple">{selected.category}</Badge>
-            <button className="icon-button" aria-label="Close details" onClick={() => setSelected(null)}><X size={18}/></button>
-          </div>
-          <h2>{selected.name}</h2>
-          <p className="muted">{selected.detail}</p>
-          <div className="challenge-detail-meta">
-            <span><MapPin size={15}/> {selected.place}</span>
-            <span><CircleHelp size={15}/> Check official college contacts for verified hours and phone numbers.</span>
-          </div>
-          {selected.url && (
-            <p style={{ marginTop: '14px' }}>
-              <a href={selected.url} target="_blank" rel="noopener noreferrer"
-                style={{ display: 'inline-block', color: '#5145f5', fontWeight: 600, textDecoration: 'underline' }}>
-                {selected.linkLabel || 'Open official website'} →
-              </a>
-            </p>
-          )}
-          <button className="primary" onClick={() => setSelected(null)}>Close details</button>
-        </div>
-      </div>
-    )}
-  </div>
-}
 
 
 function CampusPulse({eventsList,setEventsList,assignments,setAssignments,notify}) {
