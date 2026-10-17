@@ -614,7 +614,7 @@ function CampusGuide({ search, eventsList, setEventsList, notify }) {
   place: 'Student support directory',
   detail: 'Open the official VESIT Rail portal for railway-related student services.',
 url: 'https://rail.vesit.ves.ac.in/'
-}
+    },
     {name:'Reception / Main Desk',category:'Administration',place:'Main entrance',detail:'First point of contact for visitors, directions and general enquiries.'},
     {name:'VES Council',category:'Student bodies',place:'Student council',detail:'Student representation, campus initiatives and student-facing announcements. Confirm current office-bearers with the college.'},
   ]
@@ -636,36 +636,30 @@ url: 'https://rail.vesit.ves.ac.in/'
     <section className="panel"><SectionTitle title={`VESIT clubs & student communities (${clubs.length} sample listings)`} sub="Club names and presidents must be verified against the official current college directory."/><div className="filter-row">{['All','Technical','Cultural','Literary','Sports','Creative'].map(s=><button key={s} className={clubFilter===s?'active':''} onClick={()=>setClubFilter(s)}>{s}</button>)}</div><div className="directory-grid">{shownClubs.map((c,i)=><div className="directory-card club-card" key={c.name}><span className={`directory-icon directory-${i%4}`}><Users size={19}/></span><b>{c.name}</b><small>{c.category}</small><p>{c.detail}</p><div className="club-president"><strong>President</strong><span>{c.president}</span></div><button className="text-button" onClick={()=>notify('Club contact information needs verification by the college admin.')}>Contact club <ArrowRight size={14}/></button></div>)}</div></section>
     <section className="panel"><SectionTitle title="Campus location guide" sub="OpenStreetMap view centred approximately on the VESIT campus area."/><div className="leaflet-map-wrap"><MapContainer center={[19.0445,72.8992]} zoom={15} scrollWheelZoom={false} style={{height:'330px',width:'100%'}}><TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/><Marker position={[19.0445,72.8992]} icon={rideMarkerIcon}><Popup>VESIT campus area (approximate). Confirm exact building locations locally.</Popup></Marker></MapContainer></div><p className="map-disclaimer">Map markers and directory information are prototype placeholders; verify official details before public use.</p></section>
     {selected && (
-  <div
-    className="modal-backdrop"
-    onClick={() => setSelected(null)}
-  >
-    <div
-      className="modal"
-      onClick={e => e.stopPropagation()}
-    >
-      {/* Keep your existing modal content here */}
-
-   {selected.url && (
-  <a
-    href={selected.url}
-    target="_blank"
-    rel="noopener noreferrer"
-    style={{
-      display: 'inline-block',
-      marginTop: '12px',
-      color: '#5145f5',
-      fontWeight: 600
-    }}
-  >
-    Open VESIT Rail Portal →
-  </a>
-)}
-
-      {/* Keep your existing Close details button here */}
-    </div>
-  </div>
-)}
+      <div className="modal-backdrop" onClick={() => setSelected(null)}>
+        <div className="modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+          <div className="modal-head">
+            <Badge tone="purple">{selected.category}</Badge>
+            <button className="icon-button" aria-label="Close details" onClick={() => setSelected(null)}><X size={18}/></button>
+          </div>
+          <h2>{selected.name}</h2>
+          <p className="muted">{selected.detail}</p>
+          <div className="challenge-detail-meta">
+            <span><MapPin size={15}/> {selected.place}</span>
+            <span><CircleHelp size={15}/> Check official college contacts for verified hours and phone numbers.</span>
+          </div>
+          {selected.url && (
+            <p style={{ marginTop: '14px' }}>
+              <a href={selected.url} target="_blank" rel="noopener noreferrer"
+                style={{ display: 'inline-block', color: '#5145f5', fontWeight: 600, textDecoration: 'underline' }}>
+                Open VESIT Rail Portal →
+              </a>
+            </p>
+          )}
+          <button className="primary" onClick={() => setSelected(null)}>Close details</button>
+        </div>
+      </div>
+    )}
   </div>
 }
 
