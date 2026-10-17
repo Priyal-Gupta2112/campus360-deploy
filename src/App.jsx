@@ -926,24 +926,6 @@ function Timetable({ timetable, setTimetable, notify }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-      function handleRemoveTimetable() {
-    // Clear React state
-    setRows([]);
-    setFileName('');
-    setSelectedBranch('All');
-    setTimetable({});
-
-    // Wipe from localStorage so it stays removed across page reloads
-    try {
-      localStorage.removeItem('c360_timetable_rows');
-      localStorage.removeItem('c360_timetable_filename');
-      localStorage.removeItem('c360_timetable_selected_branch');
-      localStorage.removeItem('c360_timetable');
-    } catch {}
-
-    notify('Timetable cleared. You can now upload a new spreadsheet.');
-  }
-
     try {
       const buffer = await file.arrayBuffer();
       const workbook = XLSX.read(buffer, { type: 'array' });
@@ -1103,34 +1085,10 @@ function Timetable({ timetable, setTimetable, notify }) {
             <p className="muted" style={{ fontSize: '12px', marginTop: 0 }}>
               VESIT FE Timetable (.xlsx, .xls)
             </p>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
-              <label className="primary upload-label" style={{ margin: 0 }}>
-                <Plus size={15}/> {fileName ? 'Replace Spreadsheet' : 'Choose File'}
-                <input type="file" accept=".xlsx,.xls,.csv" onChange={upload} hidden/>
-              </label>
-
-              {fileName && (
-                <button
-                  type="button"
-                  className="secondary compact"
-                  onClick={handleRemoveTimetable}
-                  style={{
-                    color: 'var(--danger-text)',
-                    borderColor: 'var(--danger-border)',
-                    height: '36px',
-                    padding: '0 12px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '5px'
-                  }}
-                  title="Remove current timetable"
-                >
-                  <X size={15}/> Remove Timetable
-                </button>
-              )}
-            </div>
-
+            <label className="primary upload-label" style={{ marginTop: '10px' }}>
+              <Plus size={15}/> Choose File
+              <input type="file" accept=".xlsx,.xls,.csv" onChange={upload} hidden/>
+            </label>
             {fileName && (
               <small className="upload-success" style={{ display: 'block', marginTop: '8px', color: 'var(--success-text)' }}>
                 Active: <b>{fileName}</b>
@@ -1290,7 +1248,45 @@ const locations = [
   const shownClubs=clubs.filter(c=>(clubFilter==='All'||c.category===clubFilter)&&`${c.name} ${c.category} ${c.president}`.toLowerCase().includes(search.toLowerCase()))
   function cycleEvent(id){setEventsList(old=>old.map(e=>{if((e.id||e.name)!==id)return e;const i=states.indexOf(e.state);return {...e,state:states[(i+1+states.length)%states.length]}}));notify('Event status updated in this prototype.')}
   return <div className="page-stack"><div className="welcome-row"><div><div className="eyebrow"><MapPin size={14}/> KNOW YOUR CAMPUS</div><h1>Campus directory & guide</h1><p className="muted">Find campus facilities, student bodies, clubs and events.</p></div><Badge tone="green">Directory</Badge></div>
-    <section className="panel"><SectionTitle title="Campus facilities and contacts" sub="Some room numbers and contact details need official confirmation."/><div className="directory-grid">{shownContacts.map((c,i)=><button className="directory-card" key={c.name} onClick={()=>setSelected(c)}><span className={`directory-icon directory-${i%4}`}><MapPin size={19}/></span><b>{c.name}</b><small>{c.place}</small><p>{c.detail}</p><em>View details <ArrowRight size={14}/></em></button>)}</div></section>
+    
+<section className="panel">
+  <SectionTitle
+    title="Campus facilities and contacts"
+    sub="Some room numbers and contact details need official confirmation."
+  />
+
+  <div className="directory-grid">
+    {shownContacts.map((c, i) => (
+      <button
+        className="directory-card"
+        key={c.name}
+        onClick={() => {
+          if (c.name === "VES Council") {
+            document.getElementById("vesit-clubs")?.scrollIntoView({
+              behavior: "smooth",
+              block: "start"
+            });
+          } else {
+            setSelected(c);
+          }
+        }}
+      >
+        <span className={`directory-icon directory-${i % 4}`}>
+          <MapPin size={19} />
+        </span>
+
+        <b>{c.name}</b>
+        <small>{c.place}</small>
+        <p>{c.detail}</p>
+
+        <em>
+          View details <ArrowRight size={14} />
+        </em>
+      </button>
+    ))}
+  </div>
+</section>
+
     <section className="panel"><SectionTitle title="What's happening on campus?" sub="Browse events and preview status changes."/><div className="filter-row">{['All',...states].map(s=><button key={s} className={eventFilter===s?'active':''} onClick={()=>setEventFilter(s)}>{s}</button>)}</div>{shownEvents.length?<div className="event-list">{shownEvents.map((ev,i)=><div className="event-row event-row-wide" key={ev.id||ev.name}><div className={`event-date ed-${i%3}`}><CalendarDays size={20}/><small>{ev.time.split('·')[0].trim().toUpperCase()}</small></div><div className="event-info"><b>{ev.name}</b><small>{ev.time}</small><Badge tone={ev.state==='Live Now'?'green':ev.state==='Event Ended'?'slate':ev.state==='Starting Soon'?'amber':'purple'}>{ev.state}</Badge></div><button className="secondary compact" onClick={()=>cycleEvent(ev.id||ev.name)}>Update status <ArrowRight size={14}/></button></div>)}</div>:<p className="muted">No events match this filter. Open Campus Pulse to add an event.</p>}</section>
    <section className="panel" id="vesit-clubs">
   <SectionTitle
