@@ -443,12 +443,12 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
   ]));
 
   // --- What-If Simulator Live Controls ---
-  const [simInternalBoost, setSimInternalBoost] = useState(4); // Extra internal marks (+0 to +15)
-  const [simExternalExam, setSimExternalExam] = useState(65);   // Expected End-Sem marks (30 to 95)
-  const [simMissedMarks, setSimMissedMarks] = useState(0);     // Penalty / missed assignments (-0 to -20)
-  const [simTargetSemesterSgpa, setSimTargetSemesterSgpa] = useState('8.8'); // Projected semester SGPA
+  const [simInternalBoost, setSimInternalBoost] = useState(4);
+  const [simExternalExam, setSimExternalExam] = useState(65);
+  const [simMissedMarks, setSimMissedMarks] = useState(0);
+  const [simTargetSemesterSgpa, setSimTargetSemesterSgpa] = useState('8.8');
 
-  // Standard grade point scale helper
+  // Grade point mapping helper
   const getGradePoint = (totalMarks) => {
     const marks = Math.min(100, Math.max(0, totalMarks));
     if (marks >= 80) return { grade: 'O', points: 10 };
@@ -461,7 +461,7 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
     return { grade: 'F', points: 0 };
   };
 
-  // Base SGPA from current internals (assumes 60 base external)
+  // Base SGPA
   const baseSgpa = useMemo(() => {
     if (!subjects.length || totalCredits === 0) return 0;
     const earnedPoints = subjects.reduce((sum, s) => {
@@ -471,7 +471,7 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
     return earnedPoints / totalCredits;
   }, [subjects, totalCredits]);
 
-  // Projected SGPA calculated live from all What-If simulator conditions
+  // Projected SGPA
   const projectedSgpa = useMemo(() => {
     if (!subjects.length || totalCredits === 0) return 0;
     const earnedPoints = subjects.reduce((sum, s) => {
@@ -484,7 +484,7 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
     return earnedPoints / totalCredits;
   }, [subjects, totalCredits, simInternalBoost, simExternalExam, simMissedMarks]);
 
-  // Live Subjects meeting pass/cutoff criteria under simulation
+  // Projected Passing Count
   const projectedPassingCount = useMemo(() => {
     return subjects.filter(s => {
       const finalMarks = Number(s.internal || 0) + simInternalBoost - simMissedMarks + simExternalExam;
@@ -492,12 +492,12 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
     }).length;
   }, [subjects, simInternalBoost, simExternalExam, simMissedMarks]);
 
-  // Existing Cumulative CGPA from past semesters
+  // Existing Cumulative CGPA
   const pastCredits = semesterSgpas.reduce((sum, s) => sum + Number(s.credits || 0), 0);
   const pastPoints = semesterSgpas.reduce((sum, s) => sum + Number(s.sgpa || 0) * Number(s.credits || 0), 0);
   const currentCgpa = pastCredits > 0 ? pastPoints / pastCredits : 0;
 
-  // Projected CGPA incorporating the What-If semester result
+  // Projected CGPA
   const projectedCgpa = useMemo(() => {
     const totalSemCredits = pastCredits + totalCredits;
     if (totalSemCredits === 0) return 0;
@@ -505,7 +505,6 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
     return totalCombinedPoints / totalSemCredits;
   }, [pastCredits, pastPoints, projectedSgpa, totalCredits]);
 
-  // Projected CGPA if the user manually overrides their target SGPA
   const cgpaWithTargetSgpa = useMemo(() => {
     const semSgpaNum = Number(simTargetSemesterSgpa) || 0;
     const totalSemCredits = pastCredits + totalCredits;
@@ -522,6 +521,15 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
     setSubjects(old => [...old, { id: Date.now(), name: newName.trim(), credits: 3, internal: 20, cutoff: 40, pass: 40, target: 'B' }]);
     setNewName('');
     notify('Subject added.');
+  }
+
+  function removeSubject(id, name) {
+    if (subjects.length <= 1) {
+      notify('You must keep at least one subject.');
+      return;
+    }
+    setSubjects(old => old.filter(s => s.id !== id));
+    notify(`Removed ${name}.`);
   }
 
   return (
@@ -547,9 +555,6 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
         <Stat label="Indicative SGPA" value={baseSgpa.toFixed(2)} hint="Baseline without boosts" icon={Target}/>
       </div>
 
-      {/* ====================================================================
-          EXPANDED MULTI-SCENARIO WHAT-IF SIMULATOR
-          ==================================================================== */}
       {whatIf && (
         <section className="panel whatif-container" style={{ border: '1.5px solid var(--primary-border)', background: 'var(--bg-surface)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
@@ -574,11 +579,7 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
           </div>
 
           <div className="whatif-simulator-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '20px' }}>
-            
-            {/* Column 1: Scenarios & Condition Sliders */}
             <div style={{ display: 'grid', gap: '16px' }}>
-              
-              {/* Scenario 1 */}
               <div className="whatif-card" style={{ padding: '14px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-surface-alt)', border: '1px solid var(--border-base)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{ fontSize: '12px', fontWeight: 700 }}>1. End-Sem External Score</span>
@@ -598,7 +599,6 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
                 </small>
               </div>
 
-              {/* Scenario 2 */}
               <div className="whatif-card" style={{ padding: '14px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-surface-alt)', border: '1px solid var(--border-base)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{ fontSize: '12px', fontWeight: 700 }}>2. Internal Assessment Boost</span>
@@ -618,7 +618,6 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
                 </small>
               </div>
 
-              {/* Scenario 3 */}
               <div className="whatif-card" style={{ padding: '14px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-surface-alt)', border: '1px solid var(--border-base)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{ fontSize: '12px', fontWeight: 700 }}>3. Missed Assignment / Attendance Risk</span>
@@ -640,7 +639,6 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
                 </small>
               </div>
 
-              {/* Scenario 4 */}
               <div className="whatif-card" style={{ padding: '14px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-surface-alt)', border: '1px solid var(--border-base)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{ fontSize: '12px', fontWeight: 700 }}>4. Semester Goal Target</span>
@@ -659,10 +657,8 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
                   Quick projection: If you secure this SGPA, resulting CGPA is <b>{cgpaWithTargetSgpa.toFixed(2)}</b>.
                 </small>
               </div>
-
             </div>
 
-            {/* Column 2: Live Outcome Summary Card */}
             <div
               className="whatif-live-summary"
               style={{
@@ -681,7 +677,6 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
                   Live Projection Outcomes
                 </span>
                 
-                {/* Projected SGPA */}
                 <div style={{ marginTop: '12px' }}>
                   <small style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Projected Semester SGPA</small>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
@@ -694,7 +689,6 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
                   </div>
                 </div>
 
-                {/* Projected CGPA */}
                 <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--primary-border)' }}>
                   <small style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Cumulative Degree CGPA</small>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
@@ -710,7 +704,6 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
                   </small>
                 </div>
 
-                {/* Cutoff Met */}
                 <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--primary-border)' }}>
                   <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
                     Subjects Meeting Minimum Passing Criteria:
@@ -723,7 +716,6 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
                 </div>
               </div>
 
-              {/* Subject Breakdown Pill List */}
               <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-base)' }}>
                 <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>PROJECTED GRADES:</span>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
@@ -739,12 +731,10 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
                 </div>
               </div>
             </div>
-
           </div>
         </section>
       )}
 
-      {/* Tabs Row */}
       <div className="tab-row">
         <button className={activeTab === 'Planner' ? 'active' : ''} onClick={() => setActiveTab('Planner')}>Marks planner</button>
         <button className={activeTab === 'SGPA' ? 'active' : ''} onClick={() => setActiveTab('SGPA')}>Target SGPA</button>
@@ -752,7 +742,6 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
         <button className={activeTab === 'CGPA' ? 'active' : ''} onClick={() => setActiveTab('CGPA')}>CGPA calculator</button>
       </div>
 
-      {/* Planner Table */}
       {activeTab === 'Planner' && (
         <section className="panel">
           <SectionTitle title="Marks-needed table" sub="Target cutoffs vs current internal marks."/>
@@ -790,7 +779,6 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
         </section>
       )}
 
-      {/* Target SGPA Check */}
       {activeTab === 'SGPA' && (
         <section className="panel">
           <SectionTitle title="Target SGPA check" sub="Set a target and review feasibility against your credit load."/>
@@ -823,7 +811,6 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
         </section>
       )}
 
-      {/* CGPA Calculator */}
       {activeTab === 'CGPA' && (
         <section className="panel">
           <SectionTitle title="Cumulative CGPA Calculator" sub="Manage previous semesters to calculate credit-weighted degree CGPA."/>
@@ -854,8 +841,6 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
         </section>
       )}
 
-      {/* Subjects & Credits Editor */}
-     {/* Subjects & Credits Editor */}
       {activeTab === 'Profile' && (
         <section className="panel">
           <SectionTitle title="Subjects & Credits" sub="Configure credits, internal marks, target cutoffs, or remove subjects."/>
@@ -900,6 +885,10 @@ function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTarg
           </form>
         </section>
       )}
+
+    </div>
+  );
+}
       
 
 const rideMarkerIcon = L.divIcon({ className: 'ride-map-marker', html: '<span></span>', iconSize: [22,22], iconAnchor: [11,11] })
