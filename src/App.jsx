@@ -926,6 +926,24 @@ function Timetable({ timetable, setTimetable, notify }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+      function handleRemoveTimetable() {
+    // Clear React state
+    setRows([]);
+    setFileName('');
+    setSelectedBranch('All');
+    setTimetable({});
+
+    // Wipe from localStorage so it stays removed across page reloads
+    try {
+      localStorage.removeItem('c360_timetable_rows');
+      localStorage.removeItem('c360_timetable_filename');
+      localStorage.removeItem('c360_timetable_selected_branch');
+      localStorage.removeItem('c360_timetable');
+    } catch {}
+
+    notify('Timetable cleared. You can now upload a new spreadsheet.');
+  }
+
     try {
       const buffer = await file.arrayBuffer();
       const workbook = XLSX.read(buffer, { type: 'array' });
@@ -1085,10 +1103,34 @@ function Timetable({ timetable, setTimetable, notify }) {
             <p className="muted" style={{ fontSize: '12px', marginTop: 0 }}>
               VESIT FE Timetable (.xlsx, .xls)
             </p>
-            <label className="primary upload-label" style={{ marginTop: '10px' }}>
-              <Plus size={15}/> Choose File
-              <input type="file" accept=".xlsx,.xls,.csv" onChange={upload} hidden/>
-            </label>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+              <label className="primary upload-label" style={{ margin: 0 }}>
+                <Plus size={15}/> {fileName ? 'Replace Spreadsheet' : 'Choose File'}
+                <input type="file" accept=".xlsx,.xls,.csv" onChange={upload} hidden/>
+              </label>
+
+              {fileName && (
+                <button
+                  type="button"
+                  className="secondary compact"
+                  onClick={handleRemoveTimetable}
+                  style={{
+                    color: 'var(--danger-text)',
+                    borderColor: 'var(--danger-border)',
+                    height: '36px',
+                    padding: '0 12px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}
+                  title="Remove current timetable"
+                >
+                  <X size={15}/> Remove Timetable
+                </button>
+              )}
+            </div>
+
             {fileName && (
               <small className="upload-success" style={{ display: 'block', marginTop: '8px', color: 'var(--success-text)' }}>
                 Active: <b>{fileName}</b>
