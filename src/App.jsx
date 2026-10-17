@@ -424,24 +424,448 @@ function Dashboard({ profile, setProfile, marksRows, rides, challenges, points, 
 }
 
 function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTargetSgpa, totalCredits, targetReachable, updateSubject, activeTab, setActiveTab, notify }) {
-  const [whatIf, setWhatIf] = useState(false)
-  const [internalBump, setInternalBump] = useState(5)
-  const [newName, setNewName] = useState('')
-  const [semesterSgpas, setSemesterSgpas] = useState(() => read('c360_semester_sgpas', [{name:'Semester 1',sgpa:'8.2',credits:'20'},{name:'Semester 2',sgpa:'8.5',credits:'22'}]))
-  const cgpa = semesterSgpas.reduce((sum,s)=>sum+Number(s.sgpa||0)*Number(s.credits||0),0) / Math.max(1,semesterSgpas.reduce((sum,s)=>sum+Number(s.credits||0),0))
-  const sgpa = subjects.length ? subjects.reduce((sum,s) => sum + Number(s.credits) * (gradeScale.find(g => s.internal >= g.min)?.points || 5), 0) / Math.max(totalCredits,1) : 0
-  const neededTotal = marksRows.reduce((n,r) => n + r.needed, 0)
-  function addSubject(e) { e.preventDefault(); if (!newName.trim()) return; setSubjects(old => [...old, { id: Date.now(), name: newName.trim(), credits: 3, internal: 20, cutoff: 40, pass: 40, target: 'B' }]); setNewName(''); notify('Subject added.') }
-  return <div className="page-stack">
-    <div className="welcome-row"><div><div className="eyebrow"><GraduationCap size={14}/> ACADEMIC CONTROL CENTRE</div><h1>Academic planner</h1><p className="muted">Know where you stand, and what it takes to reach your goals.</p></div><button className={`secondary ${whatIf ? 'selected' : ''}`} onClick={() => setWhatIf(!whatIf)}><Sparkles size={16}/>{whatIf ? 'Close what-if' : 'What-if scenario'}</button></div>
-    <div className="stats-grid three"><Stat label="Subjects" value={subjects.length} hint="Currently being tracked" icon={BookOpen}/><Stat label="Total credits" value={totalCredits} hint="Across selected subjects" icon={WalletCards}/><Stat label="Indicative SGPA" value={sgpa.toFixed(2)} hint="Illustrative grade-point estimate" icon={Target}/></div>
-    {whatIf && <div className="panel whatif"><div><Badge tone="purple">WHAT-IF SIMULATOR</Badge><h3>What if I score more marks?</h3><p className="muted">Move the slider to add expected marks. Your saved marks stay unchanged.</p><label className="field-label whatif-number">Extra marks I might score <strong>+{internalBump}</strong><input type="range" min="0" max="20" step="1" value={internalBump} onChange={e=>setInternalBump(Number(e.target.value))}/></label></div><div className="whatif-result"><span>Subjects likely to meet cutoff</span><strong>{subjects.filter(s=>Math.min(100,Number(s.internal||0)+internalBump+60)>=Number(s.cutoff||40)).length} of {subjects.length}</strong><small>Estimate only · assumes 60 external marks before the extra marks</small></div></div>}
-    <div className="tab-row"><button className={activeTab === 'Planner' ? 'active' : ''} onClick={() => setActiveTab('Planner')}>Marks planner</button><button className={activeTab === 'SGPA' ? 'active' : ''} onClick={() => setActiveTab('SGPA')}>Target SGPA</button><button className={activeTab === 'Profile' ? 'active' : ''} onClick={() => setActiveTab('Profile')}>Subjects & credits</button><button className={activeTab === 'CGPA' ? 'active' : ''} onClick={() => setActiveTab('CGPA')}>CGPA calculator</button></div>
-    {activeTab === 'Planner' && <section className="panel"><SectionTitle title="Marks-needed table" sub="Sample rule: required total minus internal marks scored. Replace with your institution's official grading rules."/><div className="table-wrap"><table><thead><tr><th>Subject</th><th>Credits</th><th>Internal</th><th>Target cutoff</th><th>Marks needed</th><th>Status</th></tr></thead><tbody>{marksRows.map(s=><tr key={s.id}><td><b>{s.name}</b><small className="cell-sub">Pass minimum: {s.pass}</small></td><td>{s.credits}</td><td>{s.internal}</td><td>{s.cutoff}</td><td><b>{s.needed}</b> / 100</td><td>{s.locked ? <Badge tone="red">Grade locked</Badge> : s.needed > 100-s.internal ? <Badge tone="amber">At risk</Badge> : <Badge tone="green">Possible</Badge>}</td></tr>)}</tbody></table></div><div className="table-note"><CircleHelp size={15}/> Illustrative calculator only. Final grade locking and passing logic must follow official subject-wise exam rules.</div></section>}
-    {activeTab === 'SGPA' && <section className="panel"><SectionTitle title="Target SGPA check" sub="Set a target and review a transparent, illustrative feasibility result."/><div className="sgpa-layout"><div className="target-card"><label className="field-label">Your target SGPA<input type="number" min="0" max="10" step=".1" value={targetSgpa} onChange={e => setTargetSgpa(e.target.value)}/></label><div className="big-number">{Number(targetSgpa || 0).toFixed(1)}<small> / 10</small></div><p className="muted">Based on your subject credits and the grade-point model configured for this demo.</p></div><div className="feasibility"><div className="feasibility-icon"><Target size={24}/></div><Badge tone={targetReachable && Number(targetSgpa) <= 10 ? 'green' : 'red'}>{targetReachable && Number(targetSgpa) <= 10 ? 'Potentially achievable' : 'Not achievable with current assumptions'}</Badge><h3>{targetReachable && Number(targetSgpa) <= 10 ? 'Keep working towards it.' : 'Review your target.'}</h3><p className="muted">This preliminary check confirms whether the configured maximum marks and pass conditions permit the target. A production-ready result must calculate achievable grade-point combinations across credits.</p></div></div></section>}
-    {activeTab === 'CGPA' && <section className="panel"><SectionTitle title="CGPA calculator" sub="Enter each semester SGPA and credit total. CGPA is credit-weighted; confirm your college's official method."/><div className="cgpa-summary"><span>Estimated CGPA</span><strong>{cgpa.toFixed(2)} <small>/ 10</small></strong></div><div className="semester-list">{semesterSgpas.map((s,i)=><div className="semester-row" key={i}><label className="field-label">Semester<input value={s.name} onChange={e=>setSemesterSgpas(old=>old.map((x,j)=>j===i?{...x,name:e.target.value}:x))}/></label><label className="field-label">SGPA<input type="number" min="0" max="10" step="0.01" value={s.sgpa} onChange={e=>setSemesterSgpas(old=>old.map((x,j)=>j===i?{...x,sgpa:e.target.value}:x))}/></label><label className="field-label">Credits<input type="number" min="1" value={s.credits} onChange={e=>setSemesterSgpas(old=>old.map((x,j)=>j===i?{...x,credits:e.target.value}:x))}/></label><button className="secondary compact" onClick={()=>setSemesterSgpas(old=>old.filter((_,j)=>j!==i))}>Remove</button></div>)}</div><div className="modal-actions"><button className="secondary" onClick={()=>setSemesterSgpas(old=>[...old,{name:`Semester ${old.length+1}`,sgpa:'0',credits:'20'}])}><Plus size={15}/> Add semester</button><button className="primary" onClick={()=>save('c360_semester_sgpas',semesterSgpas)}>Save CGPA inputs</button></div></section>}
-    {activeTab === 'Profile' && <section className="panel"><SectionTitle title="Subjects & credits" sub="Edit demo values or add a subject."/><div className="subject-editor">{subjects.map(s=><div className="subject-edit-row" key={s.id}><b>{s.name}</b><label>Credits<input type="number" min="1" max="10" value={s.credits} onChange={e => updateSubject(s.id,'credits',e.target.value)}/></label><label>Internal<input type="number" min="0" max="100" value={s.internal} onChange={e => updateSubject(s.id,'internal',e.target.value)}/></label><label>Cutoff<input type="number" min="0" max="200" value={s.cutoff} onChange={e => updateSubject(s.id,'cutoff',e.target.value)}/></label></div>)}</div><form className="inline-form" onSubmit={addSubject}><input value={newName} onChange={e => setNewName(e.target.value)} placeholder="New subject name" required/><button className="primary"><Plus size={16}/> Add subject</button></form></section>}
-  </div>
+  const [whatIf, setWhatIf] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [semesterSgpas, setSemesterSgpas] = useState(() => read('c360_semester_sgpas', [
+    { name: 'Semester 1', sgpa: '8.2', credits: '20' },
+    { name: 'Semester 2', sgpa: '8.5', credits: '22' }
+  ]));
+
+  // --- What-If Simulator Live Controls ---
+  const [simInternalBoost, setSimInternalBoost] = useState(4); // Extra internal marks (+0 to +15)
+  const [simExternalExam, setSimExternalExam] = useState(65);   // Expected End-Sem marks (30 to 95)
+  const [simMissedMarks, setSimMissedMarks] = useState(0);     // Penalty / missed assignments (-0 to -20)
+  const [simTargetSemesterSgpa, setSimTargetSemesterSgpa] = useState('8.8'); // Projected semester SGPA
+
+  // Standard grade point scale helper
+  const getGradePoint = (totalMarks) => {
+    const marks = Math.min(100, Math.max(0, totalMarks));
+    if (marks >= 80) return { grade: 'O', points: 10 };
+    if (marks >= 75) return { grade: 'A', points: 9 };
+    if (marks >= 70) return { grade: 'B', points: 8 };
+    if (marks >= 60) return { grade: 'C', points: 7 };
+    if (marks >= 50) return { grade: 'D', points: 6 };
+    if (marks >= 45) return { grade: 'E', points: 5 };
+    if (marks >= 40) return { grade: 'P', points: 4 };
+    return { grade: 'F', points: 0 };
+  };
+
+  // Base SGPA from current internals (assumes 60 base external)
+  const baseSgpa = useMemo(() => {
+    if (!subjects.length || totalCredits === 0) return 0;
+    const earnedPoints = subjects.reduce((sum, s) => {
+      const total = Number(s.internal || 0) + 60;
+      return sum + Number(s.credits || 0) * getGradePoint(total).points;
+    }, 0);
+    return earnedPoints / totalCredits;
+  }, [subjects, totalCredits]);
+
+  // Projected SGPA calculated live from all What-If simulator conditions
+  const projectedSgpa = useMemo(() => {
+    if (!subjects.length || totalCredits === 0) return 0;
+    const earnedPoints = subjects.reduce((sum, s) => {
+      const projectedMarks = Math.min(
+        100,
+        Math.max(0, Number(s.internal || 0) + simInternalBoost - simMissedMarks + simExternalExam)
+      );
+      return sum + Number(s.credits || 0) * getGradePoint(projectedMarks).points;
+    }, 0);
+    return earnedPoints / totalCredits;
+  }, [subjects, totalCredits, simInternalBoost, simExternalExam, simMissedMarks]);
+
+  // Live Subjects meeting pass/cutoff criteria under simulation
+  const projectedPassingCount = useMemo(() => {
+    return subjects.filter(s => {
+      const finalMarks = Number(s.internal || 0) + simInternalBoost - simMissedMarks + simExternalExam;
+      return finalMarks >= Number(s.pass || 40) && finalMarks >= Number(s.cutoff || 40);
+    }).length;
+  }, [subjects, simInternalBoost, simExternalExam, simMissedMarks]);
+
+  // Existing Cumulative CGPA from past semesters
+  const pastCredits = semesterSgpas.reduce((sum, s) => sum + Number(s.credits || 0), 0);
+  const pastPoints = semesterSgpas.reduce((sum, s) => sum + Number(s.sgpa || 0) * Number(s.credits || 0), 0);
+  const currentCgpa = pastCredits > 0 ? pastPoints / pastCredits : 0;
+
+  // Projected CGPA incorporating the What-If semester result
+  const projectedCgpa = useMemo(() => {
+    const totalSemCredits = pastCredits + totalCredits;
+    if (totalSemCredits === 0) return 0;
+    const totalCombinedPoints = pastPoints + (projectedSgpa * totalCredits);
+    return totalCombinedPoints / totalSemCredits;
+  }, [pastCredits, pastPoints, projectedSgpa, totalCredits]);
+
+  // Projected CGPA if the user manually overrides their target SGPA
+  const cgpaWithTargetSgpa = useMemo(() => {
+    const semSgpaNum = Number(simTargetSemesterSgpa) || 0;
+    const totalSemCredits = pastCredits + totalCredits;
+    if (totalSemCredits === 0) return 0;
+    return (pastPoints + (semSgpaNum * totalCredits)) / totalSemCredits;
+  }, [pastCredits, pastPoints, simTargetSemesterSgpa, totalCredits]);
+
+  const sgpaDiff = (projectedSgpa - baseSgpa).toFixed(2);
+  const cgpaDiff = (projectedCgpa - currentCgpa).toFixed(2);
+
+  function addSubject(e) {
+    e.preventDefault();
+    if (!newName.trim()) return;
+    setSubjects(old => [...old, { id: Date.now(), name: newName.trim(), credits: 3, internal: 20, cutoff: 40, pass: 40, target: 'B' }]);
+    setNewName('');
+    notify('Subject added.');
+  }
+
+  return (
+    <div className="page-stack">
+      <div className="welcome-row">
+        <div>
+          <div className="eyebrow"><GraduationCap size={14}/> ACADEMIC CONTROL CENTRE</div>
+          <h1>Academic Planner</h1>
+          <p className="muted">Forecast exam scores, simulate grading scenarios, and track CGPA progression in real time.</p>
+        </div>
+        <button
+          className={`secondary ${whatIf ? 'selected' : ''}`}
+          onClick={() => setWhatIf(!whatIf)}
+          style={{ fontWeight: 700 }}
+        >
+          <Sparkles size={16}/> {whatIf ? 'Hide What-If Simulator' : 'Open What-If Simulator'}
+        </button>
+      </div>
+
+      <div className="stats-grid three">
+        <Stat label="Subjects Tracked" value={subjects.length} hint="Active semester load" icon={BookOpen}/>
+        <Stat label="Total Credits" value={totalCredits} hint="Graded semester weight" icon={WalletCards}/>
+        <Stat label="Indicative SGPA" value={baseSgpa.toFixed(2)} hint="Baseline without boosts" icon={Target}/>
+      </div>
+
+      {/* ====================================================================
+          EXPANDED MULTI-SCENARIO WHAT-IF SIMULATOR
+          ==================================================================== */}
+      {whatIf && (
+        <section className="panel whatif-container" style={{ border: '1.5px solid var(--primary-border)', background: 'var(--bg-surface)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+            <div>
+              <Badge tone="purple"><Sparkles size={12}/> LIVE WHAT-IF ENGINE</Badge>
+              <h2 style={{ fontSize: '18px', fontWeight: 800, margin: '6px 0 2px' }}>Interactive Academic Simulator</h2>
+              <p className="muted" style={{ fontSize: '12px', margin: 0 }}>
+                Adjust test performances and expected exam marks below. All outcomes calculate live without affecting your saved marks.
+              </p>
+            </div>
+            <button
+              className="secondary compact"
+              onClick={() => {
+                setSimInternalBoost(0);
+                setSimExternalExam(60);
+                setSimMissedMarks(0);
+                setSimTargetSemesterSgpa('8.5');
+              }}
+            >
+              Reset Scenarios
+            </button>
+          </div>
+
+          <div className="whatif-simulator-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '20px' }}>
+            
+            {/* Column 1: Scenarios & Condition Sliders */}
+            <div style={{ display: 'grid', gap: '16px' }}>
+              
+              {/* Scenario 1 */}
+              <div className="whatif-card" style={{ padding: '14px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-surface-alt)', border: '1px solid var(--border-base)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700 }}>1. End-Sem External Score</span>
+                  <strong style={{ color: 'var(--primary)', fontSize: '14px' }}>{simExternalExam} / 100</strong>
+                </div>
+                <input
+                  type="range"
+                  min="30"
+                  max="95"
+                  step="1"
+                  value={simExternalExam}
+                  onChange={e => setSimExternalExam(Number(e.target.value))}
+                  style={{ width: '100%', accentColor: 'var(--primary)' }}
+                />
+                <small className="muted" style={{ fontSize: '11px', display: 'block', marginTop: '4px' }}>
+                  Simulates average performance across external theory examinations.
+                </small>
+              </div>
+
+              {/* Scenario 2 */}
+              <div className="whatif-card" style={{ padding: '14px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-surface-alt)', border: '1px solid var(--border-base)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700 }}>2. Internal Assessment Boost</span>
+                  <strong style={{ color: 'var(--success-text)', fontSize: '14px' }}>+{simInternalBoost} marks</strong>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="15"
+                  step="1"
+                  value={simInternalBoost}
+                  onChange={e => setSimInternalBoost(Number(e.target.value))}
+                  style={{ width: '100%', accentColor: 'var(--success)' }}
+                />
+                <small className="muted" style={{ fontSize: '11px', display: 'block', marginTop: '4px' }}>
+                  Marks gained if you improve internal test scores or project submissions.
+                </small>
+              </div>
+
+              {/* Scenario 3 */}
+              <div className="whatif-card" style={{ padding: '14px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-surface-alt)', border: '1px solid var(--border-base)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700 }}>3. Missed Assignment / Attendance Risk</span>
+                  <strong style={{ color: simMissedMarks > 0 ? 'var(--danger-text)' : 'var(--text-muted)', fontSize: '14px' }}>
+                    {simMissedMarks > 0 ? `-${simMissedMarks} marks` : 'None (0)'}
+                  </strong>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="20"
+                  step="2"
+                  value={simMissedMarks}
+                  onChange={e => setSimMissedMarks(Number(e.target.value))}
+                  style={{ width: '100%', accentColor: 'var(--danger)' }}
+                />
+                <small className="muted" style={{ fontSize: '11px', display: 'block', marginTop: '4px' }}>
+                  Simulates penalties from missed lab submissions or lower attendance.
+                </small>
+              </div>
+
+              {/* Scenario 4 */}
+              <div className="whatif-card" style={{ padding: '14px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-surface-alt)', border: '1px solid var(--border-base)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700 }}>4. Semester Goal Target</span>
+                  <strong style={{ color: 'var(--primary)', fontSize: '14px' }}>{simTargetSemesterSgpa} SGPA</strong>
+                </div>
+                <input
+                  type="number"
+                  min="4.0"
+                  max="10.0"
+                  step="0.05"
+                  value={simTargetSemesterSgpa}
+                  onChange={e => setSimTargetSemesterSgpa(e.target.value)}
+                  style={{ width: '100%', padding: '6px 10px', fontSize: '13px' }}
+                />
+                <small className="muted" style={{ fontSize: '11px', display: 'block', marginTop: '4px' }}>
+                  Quick projection: If you secure this SGPA, resulting CGPA is <b>{cgpaWithTargetSgpa.toFixed(2)}</b>.
+                </small>
+              </div>
+
+            </div>
+
+            {/* Column 2: Live Outcome Summary Card */}
+            <div
+              className="whatif-live-summary"
+              style={{
+                background: 'var(--primary-subtle)',
+                border: '1.5px solid var(--primary-border)',
+                borderRadius: 'var(--radius-md)',
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: '16px'
+              }}
+            >
+              <div>
+                <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--primary-text)' }}>
+                  Live Projection Outcomes
+                </span>
+                
+                {/* Projected SGPA */}
+                <div style={{ marginTop: '12px' }}>
+                  <small style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Projected Semester SGPA</small>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                    <strong style={{ fontSize: '36px', fontWeight: 800, color: 'var(--primary)' }}>
+                      {projectedSgpa.toFixed(2)}
+                    </strong>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: Number(sgpaDiff) >= 0 ? 'var(--success-text)' : 'var(--danger-text)' }}>
+                      {Number(sgpaDiff) >= 0 ? `+${sgpaDiff}` : sgpaDiff} vs baseline
+                    </span>
+                  </div>
+                </div>
+
+                {/* Projected CGPA */}
+                <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--primary-border)' }}>
+                  <small style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Cumulative Degree CGPA</small>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                    <strong style={{ fontSize: '32px', fontWeight: 800, color: 'var(--text-main)' }}>
+                      {projectedCgpa.toFixed(2)}
+                    </strong>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: Number(cgpaDiff) >= 0 ? 'var(--success-text)' : 'var(--danger-text)' }}>
+                      {Number(cgpaDiff) >= 0 ? `+${cgpaDiff}` : cgpaDiff} impact
+                    </span>
+                  </div>
+                  <small style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    Calculated over {pastCredits + totalCredits} total credits across all semesters.
+                  </small>
+                </div>
+
+                {/* Cutoff Met */}
+                <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--primary-border)' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                    Subjects Meeting Minimum Passing Criteria:
+                  </span>
+                  <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Badge tone={projectedPassingCount === subjects.length ? 'green' : 'amber'}>
+                      {projectedPassingCount} of {subjects.length} subjects clear
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              {/* Subject Breakdown Pill List */}
+              <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-base)' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>PROJECTED GRADES:</span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                  {subjects.map(s => {
+                    const total = Math.min(100, Math.max(0, Number(s.internal || 0) + simInternalBoost - simMissedMarks + simExternalExam));
+                    const gp = getGradePoint(total);
+                    return (
+                      <span key={s.id} style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', background: 'var(--bg-surface-alt)', border: '1px solid var(--border-base)' }}>
+                        <b>{s.name}:</b> <span style={{ color: gp.grade === 'F' ? 'var(--danger-text)' : 'var(--primary)', fontWeight: 700 }}>{gp.grade} ({total})</span>
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+      )}
+
+      {/* Tabs Row */}
+      <div className="tab-row">
+        <button className={activeTab === 'Planner' ? 'active' : ''} onClick={() => setActiveTab('Planner')}>Marks planner</button>
+        <button className={activeTab === 'SGPA' ? 'active' : ''} onClick={() => setActiveTab('SGPA')}>Target SGPA</button>
+        <button className={activeTab === 'Profile' ? 'active' : ''} onClick={() => setActiveTab('Profile')}>Subjects & credits</button>
+        <button className={activeTab === 'CGPA' ? 'active' : ''} onClick={() => setActiveTab('CGPA')}>CGPA calculator</button>
+      </div>
+
+      {/* Planner Table */}
+      {activeTab === 'Planner' && (
+        <section className="panel">
+          <SectionTitle title="Marks-needed table" sub="Target cutoffs vs current internal marks."/>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>Credits</th>
+                  <th>Internal</th>
+                  <th>Target cutoff</th>
+                  <th>Marks needed</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {marksRows.map(s => (
+                  <tr key={s.id}>
+                    <td><b>{s.name}</b><small className="cell-sub">Pass minimum: {s.pass}</small></td>
+                    <td>{s.credits}</td>
+                    <td>{s.internal}</td>
+                    <td>{s.cutoff}</td>
+                    <td><b>{s.needed}</b> / 100</td>
+                    <td>
+                      {s.locked ? <Badge tone="red">Grade locked</Badge> : s.needed > 100 - s.internal ? <Badge tone="amber">At risk</Badge> : <Badge tone="green">Possible</Badge>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="table-note">
+            <CircleHelp size={15}/> Illustrative grading calculator based on university grade-point tables.
+          </div>
+        </section>
+      )}
+
+      {/* Target SGPA Check */}
+      {activeTab === 'SGPA' && (
+        <section className="panel">
+          <SectionTitle title="Target SGPA check" sub="Set a target and review feasibility against your credit load."/>
+          <div className="sgpa-layout" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+            <div className="target-card" style={{ padding: '20px', borderRadius: 'var(--radius-md)', background: 'var(--bg-surface-alt)', border: '1px solid var(--border-base)' }}>
+              <label className="field-label">
+                Your target SGPA
+                <input type="number" min="0" max="10" step=".1" value={targetSgpa} onChange={e => setTargetSgpa(e.target.value)}/>
+              </label>
+              <div className="big-number" style={{ fontSize: '36px', fontWeight: 800, color: 'var(--primary)', margin: '14px 0 6px' }}>
+                {Number(targetSgpa || 0).toFixed(1)}<small style={{ fontSize: '14px', color: 'var(--text-muted)' }}> / 10</small>
+              </div>
+              <p className="muted" style={{ fontSize: '12px' }}>
+                Based on your {subjects.length} enrolled subjects and {totalCredits} semester credits.
+              </p>
+            </div>
+            <div className="feasibility" style={{ padding: '20px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-base)' }}>
+              <div className="feasibility-icon" style={{ marginBottom: '12px' }}><Target size={24} color="var(--primary)"/></div>
+              <Badge tone={targetReachable && Number(targetSgpa) <= 10 ? 'green' : 'red'}>
+                {targetReachable && Number(targetSgpa) <= 10 ? 'Potentially achievable' : 'Target unreachable with current internals'}
+              </Badge>
+              <h3 style={{ margin: '10px 0 6px' }}>
+                {targetReachable && Number(targetSgpa) <= 10 ? 'Keep working towards it.' : 'Review your target cutoff.'}
+              </h3>
+              <p className="muted" style={{ fontSize: '12px' }}>
+                Considers required external passing thresholds across all enrolled courses.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* CGPA Calculator */}
+      {activeTab === 'CGPA' && (
+        <section className="panel">
+          <SectionTitle title="Cumulative CGPA Calculator" sub="Manage previous semesters to calculate credit-weighted degree CGPA."/>
+          <div className="cgpa-summary" style={{ padding: '16px 20px', borderRadius: 'var(--radius-sm)', background: 'var(--primary-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <span style={{ fontWeight: 700, color: 'var(--text-secondary)' }}>Cumulative Degree CGPA</span>
+            <strong style={{ fontSize: '28px', color: 'var(--primary)', fontWeight: 800 }}>
+              {currentCgpa.toFixed(2)} <small style={{ fontSize: '14px', color: 'var(--text-muted)' }}>/ 10</small>
+            </strong>
+          </div>
+          <div className="semester-list" style={{ display: 'grid', gap: '10px' }}>
+            {semesterSgpas.map((s, i) => (
+              <div className="semester-row" key={i} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr)) auto', gap: '10px', alignItems: 'end', padding: '12px', background: 'var(--bg-surface-alt)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-base)' }}>
+                <label className="field-label">Semester<input value={s.name} onChange={e => setSemesterSgpas(old => old.map((x, j) => j === i ? { ...x, name: e.target.value } : x))}/></label>
+                <label className="field-label">SGPA<input type="number" min="0" max="10" step="0.01" value={s.sgpa} onChange={e => setSemesterSgpas(old => old.map((x, j) => j === i ? { ...x, sgpa: e.target.value } : x))}/></label>
+                <label className="field-label">Credits<input type="number" min="1" value={s.credits} onChange={e => setSemesterSgpas(old => old.map((x, j) => j === i ? { ...x, credits: e.target.value } : x))}/></label>
+                <button className="secondary compact" onClick={() => setSemesterSgpas(old => old.filter((_, j) => j !== i))}>Remove</button>
+              </div>
+            ))}
+          </div>
+          <div className="modal-actions">
+            <button className="secondary" onClick={() => setSemesterSgpas(old => [...old, { name: `Semester ${old.length + 1}`, sgpa: '8.0', credits: '20' }])}>
+              <Plus size={15}/> Add Semester
+            </button>
+            <button className="primary" onClick={() => { save('c360_semester_sgpas', semesterSgpas); notify('CGPA inputs saved.'); }}>
+              Save CGPA Data
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* Subjects & Credits Editor */}
+      {activeTab === 'Profile' && (
+        <section className="panel">
+          <SectionTitle title="Subjects & Credits" sub="Configure credits, internal marks, and target cutoffs."/>
+          <div className="subject-editor" style={{ display: 'grid', gap: '10px' }}>
+            {subjects.map(s => (
+              <div className="subject-edit-row" key={s.id} style={{ display: 'grid', gridTemplateColumns: '1.2fr repeat(3, 1fr)', gap: '10px', alignItems: 'center', padding: '12px', background: 'var(--bg-surface-alt)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-base)' }}>
+                <b>{s.name}</b>
+                <label className="field-label">Credits<input type="number" min="1" max="10" value={s.credits} onChange={e => updateSubject(s.id, 'credits', e.target.value)}/></label>
+                <label className="field-label">Internal<input type="number" min="0" max="100" value={s.internal} onChange={e => updateSubject(s.id, 'internal', e.target.value)}/></label>
+                <label className="field-label">Cutoff<input type="number" min="0" max="100" value={s.cutoff} onChange={e => updateSubject(s.id, 'cutoff', e.target.value)}/></label>
+              </div>
+            ))}
+          </div>
+          <form className="inline-form" onSubmit={addSubject} style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+            <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="New subject name (e.g., Engineering Mechanics)" required/>
+            <button className="primary" style={{ whiteSpace: 'nowrap' }}><Plus size={16}/> Add Subject</button>
+          </form>
+        </section>
+      )}
+
+    </div>
+  );
 }
 
 const rideMarkerIcon = L.divIcon({ className: 'ride-map-marker', html: '<span></span>', iconSize: [22,22], iconAnchor: [11,11] })
