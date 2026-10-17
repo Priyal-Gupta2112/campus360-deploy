@@ -21,7 +21,7 @@ const getInitialTheme = () => {
 
 const nav = [
   ['Dashboard', LayoutDashboard], ['Academic Planner', GraduationCap], ['Faculty', BookOpen], ['Timetable', CalendarDays], ['Rides', Bike],
-  ['Challenges', Trophy], ['Achievements', Award], ['Campus Guide', MapPin], ['Campus Pulse', CalendarDays], ['SkillSwap', Users],
+  ['Challenges', Trophy], ['Campus Guide', MapPin], ['Campus Pulse', CalendarDays], ['SkillSwap', Users],
 ]
 
 const read = (key, fallback) => {
@@ -88,7 +88,6 @@ const [loggedIn, setLoggedIn] = useState(() => {
   const [search, setSearch] = useState('')
   const [newRide, setNewRide] = useState({ from: '', to: 'Campus Main Gate', time: '', seats: 2, vehicleType: 'Car', paymentMode: 'Pay before ride', fare: '' })
   const [timetable, setTimetable] = useState(() => read('c360_timetable', {}))
-  const [achievements, setAchievements] = useState(() => read('c360_achievements', []))
   const [logoutConfirm, setLogoutConfirm] = useState(false)
   const [newChallenge, setNewChallenge] = useState('')
   const [assignments, setAssignments] = useState(() => read('c360_assignments', [
@@ -101,6 +100,7 @@ const [loggedIn, setLoggedIn] = useState(() => {
     { id: 2, name: 'Python problem solving', category: 'Technology', offer: 'Can teach', want: 'Video editing', owner: 'Aarav M.', contact: 'Campus message' },
     { id: 3, name: 'Public speaking', category: 'Communication', offer: 'Want to learn', wantSkill: 'Presentation practice', owner: 'Rohan P.', contact: 'Campus message' },
   ]))
+  const [skillRequests, setSkillRequests] = useState(() => read('c360_skill_requests', []))
   const [targetSgpa, setTargetSgpa] = useState('8.5')
   const [activeTab, setActiveTab] = useState('Planner')
   const [authMode, setAuthMode] = useState('login')
@@ -148,8 +148,8 @@ const [loggedIn, setLoggedIn] = useState(() => {
   }, [assignments, eventsList])
 
   useEffect(() => save('c360_skills', skills), [skills])
+  useEffect(() => save('c360_skill_requests', skillRequests), [skillRequests])
   useEffect(() => save('c360_timetable', timetable), [timetable])
-  useEffect(() => save('c360_achievements', achievements), [achievements])
 
   useEffect(() => {
     const handleChallengeCreate = (event) => {
@@ -379,11 +379,10 @@ const [loggedIn, setLoggedIn] = useState(() => {
         {page === 'Timetable' && <Timetable timetable={timetable} setTimetable={setTimetable} notify={notify}/> }
         {page === 'Academic Planner' && <AcademicPlanner subjects={subjects} setSubjects={setSubjects} marksRows={marksRows} targetSgpa={targetSgpa} setTargetSgpa={setTargetSgpa} totalCredits={totalCredits} targetReachable={targetReachable} updateSubject={updateSubject} activeTab={activeTab} setActiveTab={setActiveTab} notify={notify}/>}
         {page === 'Rides' && <Rides rides={rides} requestRide={requestRide} updateRideRequest={updateRideRequest} profile={profile} newRide={newRide} setNewRide={setNewRide} addRide={addRide} search={search}/>}
-        {page === 'Challenges' && <Challenges challenges={challenges} points={points} newChallenge={newChallenge} setNewChallenge={setNewChallenge} addChallenge={addChallenge} toggleChallenge={toggleChallenge}/> }
-        {page === 'Achievements' && <Achievements achievements={achievements} setAchievements={setAchievements} profile={profile} notify={notify}/>}
+        {page === 'Challenges' && <Challenges challenges={challenges} points={points} newChallenge={newChallenge} setNewChallenge={setNewChallenge} addChallenge={addChallenge} toggleChallenge={toggleChallenge}/>}
         {page === 'Campus Guide' && <CampusGuide search={search} eventsList={eventsList} setEventsList={setEventsList} notify={notify}/>}
         {page === 'Campus Pulse' && <CampusPulse eventsList={eventsList} setEventsList={setEventsList} assignments={assignments} setAssignments={setAssignments} notify={notify}/>}
-        {page === 'SkillSwap' && <SkillSwap skills={skills} setSkills={setSkills} profile={profile} notify={notify}/>}
+        {page === 'SkillSwap' && <SkillSwap skills={skills} setSkills={setSkills} skillRequests={skillRequests} setSkillRequests={setSkillRequests} profile={profile} notify={notify}/>} 
       </div>
       <footer className="footer"><span>Campus360 · Built for first-year life</span><span><span className="pulse-dot"/> Demo environment · Sample data</span></footer>
     </main>
@@ -425,448 +424,24 @@ function Dashboard({ profile, setProfile, marksRows, rides, challenges, points, 
 }
 
 function AcademicPlanner({ subjects, setSubjects, marksRows, targetSgpa, setTargetSgpa, totalCredits, targetReachable, updateSubject, activeTab, setActiveTab, notify }) {
-  const [whatIf, setWhatIf] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [semesterSgpas, setSemesterSgpas] = useState(() => read('c360_semester_sgpas', [
-    { name: 'Semester 1', sgpa: '8.2', credits: '20' },
-    { name: 'Semester 2', sgpa: '8.5', credits: '22' }
-  ]));
-
-  // --- What-If Simulator Live Controls ---
-  const [simInternalBoost, setSimInternalBoost] = useState(4); // Extra internal marks (+0 to +15)
-  const [simExternalExam, setSimExternalExam] = useState(65);   // Expected End-Sem marks (30 to 95)
-  const [simMissedMarks, setSimMissedMarks] = useState(0);     // Penalty / missed assignments (-0 to -20)
-  const [simTargetSemesterSgpa, setSimTargetSemesterSgpa] = useState('8.8'); // Projected semester SGPA
-
-  // Standard grade point scale helper
-  const getGradePoint = (totalMarks) => {
-    const marks = Math.min(100, Math.max(0, totalMarks));
-    if (marks >= 80) return { grade: 'O', points: 10 };
-    if (marks >= 75) return { grade: 'A', points: 9 };
-    if (marks >= 70) return { grade: 'B', points: 8 };
-    if (marks >= 60) return { grade: 'C', points: 7 };
-    if (marks >= 50) return { grade: 'D', points: 6 };
-    if (marks >= 45) return { grade: 'E', points: 5 };
-    if (marks >= 40) return { grade: 'P', points: 4 };
-    return { grade: 'F', points: 0 };
-  };
-
-  // Base SGPA from current internals (assumes 60 base external)
-  const baseSgpa = useMemo(() => {
-    if (!subjects.length || totalCredits === 0) return 0;
-    const earnedPoints = subjects.reduce((sum, s) => {
-      const total = Number(s.internal || 0) + 60;
-      return sum + Number(s.credits || 0) * getGradePoint(total).points;
-    }, 0);
-    return earnedPoints / totalCredits;
-  }, [subjects, totalCredits]);
-
-  // Projected SGPA calculated live from all What-If simulator conditions
-  const projectedSgpa = useMemo(() => {
-    if (!subjects.length || totalCredits === 0) return 0;
-    const earnedPoints = subjects.reduce((sum, s) => {
-      const projectedMarks = Math.min(
-        100,
-        Math.max(0, Number(s.internal || 0) + simInternalBoost - simMissedMarks + simExternalExam)
-      );
-      return sum + Number(s.credits || 0) * getGradePoint(projectedMarks).points;
-    }, 0);
-    return earnedPoints / totalCredits;
-  }, [subjects, totalCredits, simInternalBoost, simExternalExam, simMissedMarks]);
-
-  // Live Subjects meeting pass/cutoff criteria under simulation
-  const projectedPassingCount = useMemo(() => {
-    return subjects.filter(s => {
-      const finalMarks = Number(s.internal || 0) + simInternalBoost - simMissedMarks + simExternalExam;
-      return finalMarks >= Number(s.pass || 40) && finalMarks >= Number(s.cutoff || 40);
-    }).length;
-  }, [subjects, simInternalBoost, simExternalExam, simMissedMarks]);
-
-  // Existing Cumulative CGPA from past semesters
-  const pastCredits = semesterSgpas.reduce((sum, s) => sum + Number(s.credits || 0), 0);
-  const pastPoints = semesterSgpas.reduce((sum, s) => sum + Number(s.sgpa || 0) * Number(s.credits || 0), 0);
-  const currentCgpa = pastCredits > 0 ? pastPoints / pastCredits : 0;
-
-  // Projected CGPA incorporating the What-If semester result
-  const projectedCgpa = useMemo(() => {
-    const totalSemCredits = pastCredits + totalCredits;
-    if (totalSemCredits === 0) return 0;
-    const totalCombinedPoints = pastPoints + (projectedSgpa * totalCredits);
-    return totalCombinedPoints / totalSemCredits;
-  }, [pastCredits, pastPoints, projectedSgpa, totalCredits]);
-
-  // Projected CGPA if the user manually overrides their target SGPA
-  const cgpaWithTargetSgpa = useMemo(() => {
-    const semSgpaNum = Number(simTargetSemesterSgpa) || 0;
-    const totalSemCredits = pastCredits + totalCredits;
-    if (totalSemCredits === 0) return 0;
-    return (pastPoints + (semSgpaNum * totalCredits)) / totalSemCredits;
-  }, [pastCredits, pastPoints, simTargetSemesterSgpa, totalCredits]);
-
-  const sgpaDiff = (projectedSgpa - baseSgpa).toFixed(2);
-  const cgpaDiff = (projectedCgpa - currentCgpa).toFixed(2);
-
-  function addSubject(e) {
-    e.preventDefault();
-    if (!newName.trim()) return;
-    setSubjects(old => [...old, { id: Date.now(), name: newName.trim(), credits: 3, internal: 20, cutoff: 40, pass: 40, target: 'B' }]);
-    setNewName('');
-    notify('Subject added.');
-  }
-
-  return (
-    <div className="page-stack">
-      <div className="welcome-row">
-        <div>
-          <div className="eyebrow"><GraduationCap size={14}/> ACADEMIC CONTROL CENTRE</div>
-          <h1>Academic Planner</h1>
-          <p className="muted">Forecast exam scores, simulate grading scenarios, and track CGPA progression in real time.</p>
-        </div>
-        <button
-          className={`secondary ${whatIf ? 'selected' : ''}`}
-          onClick={() => setWhatIf(!whatIf)}
-          style={{ fontWeight: 700 }}
-        >
-          <Sparkles size={16}/> {whatIf ? 'Hide What-If Simulator' : 'Open What-If Simulator'}
-        </button>
-      </div>
-
-      <div className="stats-grid three">
-        <Stat label="Subjects Tracked" value={subjects.length} hint="Active semester load" icon={BookOpen}/>
-        <Stat label="Total Credits" value={totalCredits} hint="Graded semester weight" icon={WalletCards}/>
-        <Stat label="Indicative SGPA" value={baseSgpa.toFixed(2)} hint="Baseline without boosts" icon={Target}/>
-      </div>
-
-      {/* ====================================================================
-          EXPANDED MULTI-SCENARIO WHAT-IF SIMULATOR
-          ==================================================================== */}
-      {whatIf && (
-        <section className="panel whatif-container" style={{ border: '1.5px solid var(--primary-border)', background: 'var(--bg-surface)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-            <div>
-              <Badge tone="purple"><Sparkles size={12}/> LIVE WHAT-IF ENGINE</Badge>
-              <h2 style={{ fontSize: '18px', fontWeight: 800, margin: '6px 0 2px' }}>Interactive Academic Simulator</h2>
-              <p className="muted" style={{ fontSize: '12px', margin: 0 }}>
-                Adjust test performances and expected exam marks below. All outcomes calculate live without affecting your saved marks.
-              </p>
-            </div>
-            <button
-              className="secondary compact"
-              onClick={() => {
-                setSimInternalBoost(0);
-                setSimExternalExam(60);
-                setSimMissedMarks(0);
-                setSimTargetSemesterSgpa('8.5');
-              }}
-            >
-              Reset Scenarios
-            </button>
-          </div>
-
-          <div className="whatif-simulator-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '20px' }}>
-            
-            {/* Column 1: Scenarios & Condition Sliders */}
-            <div style={{ display: 'grid', gap: '16px' }}>
-              
-              {/* Scenario 1 */}
-              <div className="whatif-card" style={{ padding: '14px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-surface-alt)', border: '1px solid var(--border-base)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 700 }}>1. End-Sem External Score</span>
-                  <strong style={{ color: 'var(--primary)', fontSize: '14px' }}>{simExternalExam} / 100</strong>
-                </div>
-                <input
-                  type="range"
-                  min="30"
-                  max="95"
-                  step="1"
-                  value={simExternalExam}
-                  onChange={e => setSimExternalExam(Number(e.target.value))}
-                  style={{ width: '100%', accentColor: 'var(--primary)' }}
-                />
-                <small className="muted" style={{ fontSize: '11px', display: 'block', marginTop: '4px' }}>
-                  Simulates average performance across external theory examinations.
-                </small>
-              </div>
-
-              {/* Scenario 2 */}
-              <div className="whatif-card" style={{ padding: '14px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-surface-alt)', border: '1px solid var(--border-base)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 700 }}>2. Internal Assessment Boost</span>
-                  <strong style={{ color: 'var(--success-text)', fontSize: '14px' }}>+{simInternalBoost} marks</strong>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="15"
-                  step="1"
-                  value={simInternalBoost}
-                  onChange={e => setSimInternalBoost(Number(e.target.value))}
-                  style={{ width: '100%', accentColor: 'var(--success)' }}
-                />
-                <small className="muted" style={{ fontSize: '11px', display: 'block', marginTop: '4px' }}>
-                  Marks gained if you improve internal test scores or project submissions.
-                </small>
-              </div>
-
-              {/* Scenario 3 */}
-              <div className="whatif-card" style={{ padding: '14px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-surface-alt)', border: '1px solid var(--border-base)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 700 }}>3. Missed Assignment / Attendance Risk</span>
-                  <strong style={{ color: simMissedMarks > 0 ? 'var(--danger-text)' : 'var(--text-muted)', fontSize: '14px' }}>
-                    {simMissedMarks > 0 ? `-${simMissedMarks} marks` : 'None (0)'}
-                  </strong>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="20"
-                  step="2"
-                  value={simMissedMarks}
-                  onChange={e => setSimMissedMarks(Number(e.target.value))}
-                  style={{ width: '100%', accentColor: 'var(--danger)' }}
-                />
-                <small className="muted" style={{ fontSize: '11px', display: 'block', marginTop: '4px' }}>
-                  Simulates penalties from missed lab submissions or lower attendance.
-                </small>
-              </div>
-
-              {/* Scenario 4 */}
-              <div className="whatif-card" style={{ padding: '14px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-surface-alt)', border: '1px solid var(--border-base)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 700 }}>4. Semester Goal Target</span>
-                  <strong style={{ color: 'var(--primary)', fontSize: '14px' }}>{simTargetSemesterSgpa} SGPA</strong>
-                </div>
-                <input
-                  type="number"
-                  min="4.0"
-                  max="10.0"
-                  step="0.05"
-                  value={simTargetSemesterSgpa}
-                  onChange={e => setSimTargetSemesterSgpa(e.target.value)}
-                  style={{ width: '100%', padding: '6px 10px', fontSize: '13px' }}
-                />
-                <small className="muted" style={{ fontSize: '11px', display: 'block', marginTop: '4px' }}>
-                  Quick projection: If you secure this SGPA, resulting CGPA is <b>{cgpaWithTargetSgpa.toFixed(2)}</b>.
-                </small>
-              </div>
-
-            </div>
-
-            {/* Column 2: Live Outcome Summary Card */}
-            <div
-              className="whatif-live-summary"
-              style={{
-                background: 'var(--primary-subtle)',
-                border: '1.5px solid var(--primary-border)',
-                borderRadius: 'var(--radius-md)',
-                padding: '20px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                gap: '16px'
-              }}
-            >
-              <div>
-                <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--primary-text)' }}>
-                  Live Projection Outcomes
-                </span>
-                
-                {/* Projected SGPA */}
-                <div style={{ marginTop: '12px' }}>
-                  <small style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Projected Semester SGPA</small>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                    <strong style={{ fontSize: '36px', fontWeight: 800, color: 'var(--primary)' }}>
-                      {projectedSgpa.toFixed(2)}
-                    </strong>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: Number(sgpaDiff) >= 0 ? 'var(--success-text)' : 'var(--danger-text)' }}>
-                      {Number(sgpaDiff) >= 0 ? `+${sgpaDiff}` : sgpaDiff} vs baseline
-                    </span>
-                  </div>
-                </div>
-
-                {/* Projected CGPA */}
-                <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--primary-border)' }}>
-                  <small style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Cumulative Degree CGPA</small>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                    <strong style={{ fontSize: '32px', fontWeight: 800, color: 'var(--text-main)' }}>
-                      {projectedCgpa.toFixed(2)}
-                    </strong>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: Number(cgpaDiff) >= 0 ? 'var(--success-text)' : 'var(--danger-text)' }}>
-                      {Number(cgpaDiff) >= 0 ? `+${cgpaDiff}` : cgpaDiff} impact
-                    </span>
-                  </div>
-                  <small style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    Calculated over {pastCredits + totalCredits} total credits across all semesters.
-                  </small>
-                </div>
-
-                {/* Cutoff Met */}
-                <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--primary-border)' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                    Subjects Meeting Minimum Passing Criteria:
-                  </span>
-                  <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Badge tone={projectedPassingCount === subjects.length ? 'green' : 'amber'}>
-                      {projectedPassingCount} of {subjects.length} subjects clear
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-
-              {/* Subject Breakdown Pill List */}
-              <div style={{ background: 'var(--bg-surface)', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-base)' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)' }}>PROJECTED GRADES:</span>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
-                  {subjects.map(s => {
-                    const total = Math.min(100, Math.max(0, Number(s.internal || 0) + simInternalBoost - simMissedMarks + simExternalExam));
-                    const gp = getGradePoint(total);
-                    return (
-                      <span key={s.id} style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', background: 'var(--bg-surface-alt)', border: '1px solid var(--border-base)' }}>
-                        <b>{s.name}:</b> <span style={{ color: gp.grade === 'F' ? 'var(--danger-text)' : 'var(--primary)', fontWeight: 700 }}>{gp.grade} ({total})</span>
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </section>
-      )}
-
-      {/* Tabs Row */}
-      <div className="tab-row">
-        <button className={activeTab === 'Planner' ? 'active' : ''} onClick={() => setActiveTab('Planner')}>Marks planner</button>
-        <button className={activeTab === 'SGPA' ? 'active' : ''} onClick={() => setActiveTab('SGPA')}>Target SGPA</button>
-        <button className={activeTab === 'Profile' ? 'active' : ''} onClick={() => setActiveTab('Profile')}>Subjects & credits</button>
-        <button className={activeTab === 'CGPA' ? 'active' : ''} onClick={() => setActiveTab('CGPA')}>CGPA calculator</button>
-      </div>
-
-      {/* Planner Table */}
-      {activeTab === 'Planner' && (
-        <section className="panel">
-          <SectionTitle title="Marks-needed table" sub="Target cutoffs vs current internal marks."/>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Subject</th>
-                  <th>Credits</th>
-                  <th>Internal</th>
-                  <th>Target cutoff</th>
-                  <th>Marks needed</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {marksRows.map(s => (
-                  <tr key={s.id}>
-                    <td><b>{s.name}</b><small className="cell-sub">Pass minimum: {s.pass}</small></td>
-                    <td>{s.credits}</td>
-                    <td>{s.internal}</td>
-                    <td>{s.cutoff}</td>
-                    <td><b>{s.needed}</b> / 100</td>
-                    <td>
-                      {s.locked ? <Badge tone="red">Grade locked</Badge> : s.needed > 100 - s.internal ? <Badge tone="amber">At risk</Badge> : <Badge tone="green">Possible</Badge>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="table-note">
-            <CircleHelp size={15}/> Illustrative grading calculator based on university grade-point tables.
-          </div>
-        </section>
-      )}
-
-      {/* Target SGPA Check */}
-      {activeTab === 'SGPA' && (
-        <section className="panel">
-          <SectionTitle title="Target SGPA check" sub="Set a target and review feasibility against your credit load."/>
-          <div className="sgpa-layout" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-            <div className="target-card" style={{ padding: '20px', borderRadius: 'var(--radius-md)', background: 'var(--bg-surface-alt)', border: '1px solid var(--border-base)' }}>
-              <label className="field-label">
-                Your target SGPA
-                <input type="number" min="0" max="10" step=".1" value={targetSgpa} onChange={e => setTargetSgpa(e.target.value)}/>
-              </label>
-              <div className="big-number" style={{ fontSize: '36px', fontWeight: 800, color: 'var(--primary)', margin: '14px 0 6px' }}>
-                {Number(targetSgpa || 0).toFixed(1)}<small style={{ fontSize: '14px', color: 'var(--text-muted)' }}> / 10</small>
-              </div>
-              <p className="muted" style={{ fontSize: '12px' }}>
-                Based on your {subjects.length} enrolled subjects and {totalCredits} semester credits.
-              </p>
-            </div>
-            <div className="feasibility" style={{ padding: '20px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-base)' }}>
-              <div className="feasibility-icon" style={{ marginBottom: '12px' }}><Target size={24} color="var(--primary)"/></div>
-              <Badge tone={targetReachable && Number(targetSgpa) <= 10 ? 'green' : 'red'}>
-                {targetReachable && Number(targetSgpa) <= 10 ? 'Potentially achievable' : 'Target unreachable with current internals'}
-              </Badge>
-              <h3 style={{ margin: '10px 0 6px' }}>
-                {targetReachable && Number(targetSgpa) <= 10 ? 'Keep working towards it.' : 'Review your target cutoff.'}
-              </h3>
-              <p className="muted" style={{ fontSize: '12px' }}>
-                Considers required external passing thresholds across all enrolled courses.
-              </p>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* CGPA Calculator */}
-      {activeTab === 'CGPA' && (
-        <section className="panel">
-          <SectionTitle title="Cumulative CGPA Calculator" sub="Manage previous semesters to calculate credit-weighted degree CGPA."/>
-          <div className="cgpa-summary" style={{ padding: '16px 20px', borderRadius: 'var(--radius-sm)', background: 'var(--primary-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <span style={{ fontWeight: 700, color: 'var(--text-secondary)' }}>Cumulative Degree CGPA</span>
-            <strong style={{ fontSize: '28px', color: 'var(--primary)', fontWeight: 800 }}>
-              {currentCgpa.toFixed(2)} <small style={{ fontSize: '14px', color: 'var(--text-muted)' }}>/ 10</small>
-            </strong>
-          </div>
-          <div className="semester-list" style={{ display: 'grid', gap: '10px' }}>
-            {semesterSgpas.map((s, i) => (
-              <div className="semester-row" key={i} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr)) auto', gap: '10px', alignItems: 'end', padding: '12px', background: 'var(--bg-surface-alt)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-base)' }}>
-                <label className="field-label">Semester<input value={s.name} onChange={e => setSemesterSgpas(old => old.map((x, j) => j === i ? { ...x, name: e.target.value } : x))}/></label>
-                <label className="field-label">SGPA<input type="number" min="0" max="10" step="0.01" value={s.sgpa} onChange={e => setSemesterSgpas(old => old.map((x, j) => j === i ? { ...x, sgpa: e.target.value } : x))}/></label>
-                <label className="field-label">Credits<input type="number" min="1" value={s.credits} onChange={e => setSemesterSgpas(old => old.map((x, j) => j === i ? { ...x, credits: e.target.value } : x))}/></label>
-                <button className="secondary compact" onClick={() => setSemesterSgpas(old => old.filter((_, j) => j !== i))}>Remove</button>
-              </div>
-            ))}
-          </div>
-          <div className="modal-actions">
-            <button className="secondary" onClick={() => setSemesterSgpas(old => [...old, { name: `Semester ${old.length + 1}`, sgpa: '8.0', credits: '20' }])}>
-              <Plus size={15}/> Add Semester
-            </button>
-            <button className="primary" onClick={() => { save('c360_semester_sgpas', semesterSgpas); notify('CGPA inputs saved.'); }}>
-              Save CGPA Data
-            </button>
-          </div>
-        </section>
-      )}
-
-      {/* Subjects & Credits Editor */}
-      {activeTab === 'Profile' && (
-        <section className="panel">
-          <SectionTitle title="Subjects & Credits" sub="Configure credits, internal marks, and target cutoffs."/>
-          <div className="subject-editor" style={{ display: 'grid', gap: '10px' }}>
-            {subjects.map(s => (
-              <div className="subject-edit-row" key={s.id} style={{ display: 'grid', gridTemplateColumns: '1.2fr repeat(3, 1fr)', gap: '10px', alignItems: 'center', padding: '12px', background: 'var(--bg-surface-alt)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-base)' }}>
-                <b>{s.name}</b>
-                <label className="field-label">Credits<input type="number" min="1" max="10" value={s.credits} onChange={e => updateSubject(s.id, 'credits', e.target.value)}/></label>
-                <label className="field-label">Internal<input type="number" min="0" max="100" value={s.internal} onChange={e => updateSubject(s.id, 'internal', e.target.value)}/></label>
-                <label className="field-label">Cutoff<input type="number" min="0" max="100" value={s.cutoff} onChange={e => updateSubject(s.id, 'cutoff', e.target.value)}/></label>
-              </div>
-            ))}
-          </div>
-          <form className="inline-form" onSubmit={addSubject} style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
-            <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="New subject name (e.g., Engineering Mechanics)" required/>
-            <button className="primary" style={{ whiteSpace: 'nowrap' }}><Plus size={16}/> Add Subject</button>
-          </form>
-        </section>
-      )}
-
-    </div>
-  );
+  const [whatIf, setWhatIf] = useState(false)
+  const [internalBump, setInternalBump] = useState(5)
+  const [newName, setNewName] = useState('')
+  const [semesterSgpas, setSemesterSgpas] = useState(() => read('c360_semester_sgpas', [{name:'Semester 1',sgpa:'8.2',credits:'20'},{name:'Semester 2',sgpa:'8.5',credits:'22'}]))
+  const cgpa = semesterSgpas.reduce((sum,s)=>sum+Number(s.sgpa||0)*Number(s.credits||0),0) / Math.max(1,semesterSgpas.reduce((sum,s)=>sum+Number(s.credits||0),0))
+  const sgpa = subjects.length ? subjects.reduce((sum,s) => sum + Number(s.credits) * (gradeScale.find(g => s.internal >= g.min)?.points || 5), 0) / Math.max(totalCredits,1) : 0
+  const neededTotal = marksRows.reduce((n,r) => n + r.needed, 0)
+  function addSubject(e) { e.preventDefault(); if (!newName.trim()) return; setSubjects(old => [...old, { id: Date.now(), name: newName.trim(), credits: 3, internal: 20, cutoff: 40, pass: 40, target: 'B' }]); setNewName(''); notify('Subject added.') }
+  return <div className="page-stack">
+    <div className="welcome-row"><div><div className="eyebrow"><GraduationCap size={14}/> ACADEMIC CONTROL CENTRE</div><h1>Academic planner</h1><p className="muted">Know where you stand, and what it takes to reach your goals.</p></div><button className={`secondary ${whatIf ? 'selected' : ''}`} onClick={() => setWhatIf(!whatIf)}><Sparkles size={16}/>{whatIf ? 'Close what-if' : 'What-if scenario'}</button></div>
+    <div className="stats-grid three"><Stat label="Subjects" value={subjects.length} hint="Currently being tracked" icon={BookOpen}/><Stat label="Total credits" value={totalCredits} hint="Across selected subjects" icon={WalletCards}/><Stat label="Indicative SGPA" value={sgpa.toFixed(2)} hint="Illustrative grade-point estimate" icon={Target}/></div>
+    {whatIf && <div className="panel whatif"><div><Badge tone="purple">WHAT-IF SIMULATOR</Badge><h3>What if I score more marks?</h3><p className="muted">Move the slider to add expected marks. Your saved marks stay unchanged.</p><label className="field-label whatif-number">Extra marks I might score <strong>+{internalBump}</strong><input type="range" min="0" max="20" step="1" value={internalBump} onChange={e=>setInternalBump(Number(e.target.value))}/></label></div><div className="whatif-result"><span>Subjects likely to meet cutoff</span><strong>{subjects.filter(s=>Math.min(100,Number(s.internal||0)+internalBump+60)>=Number(s.cutoff||40)).length} of {subjects.length}</strong><small>Estimate only · assumes 60 external marks before the extra marks</small></div></div>}
+    <div className="tab-row"><button className={activeTab === 'Planner' ? 'active' : ''} onClick={() => setActiveTab('Planner')}>Marks planner</button><button className={activeTab === 'SGPA' ? 'active' : ''} onClick={() => setActiveTab('SGPA')}>Target SGPA</button><button className={activeTab === 'Profile' ? 'active' : ''} onClick={() => setActiveTab('Profile')}>Subjects & credits</button><button className={activeTab === 'CGPA' ? 'active' : ''} onClick={() => setActiveTab('CGPA')}>CGPA calculator</button></div>
+    {activeTab === 'Planner' && <section className="panel"><SectionTitle title="Marks-needed table" sub="Sample rule: required total minus internal marks scored. Replace with your institution's official grading rules."/><div className="table-wrap"><table><thead><tr><th>Subject</th><th>Credits</th><th>Internal</th><th>Target cutoff</th><th>Marks needed</th><th>Status</th></tr></thead><tbody>{marksRows.map(s=><tr key={s.id}><td><b>{s.name}</b><small className="cell-sub">Pass minimum: {s.pass}</small></td><td>{s.credits}</td><td>{s.internal}</td><td>{s.cutoff}</td><td><b>{s.needed}</b> / 100</td><td>{s.locked ? <Badge tone="red">Grade locked</Badge> : s.needed > 100-s.internal ? <Badge tone="amber">At risk</Badge> : <Badge tone="green">Possible</Badge>}</td></tr>)}</tbody></table></div><div className="table-note"><CircleHelp size={15}/> Illustrative calculator only. Final grade locking and passing logic must follow official subject-wise exam rules.</div></section>}
+    {activeTab === 'SGPA' && <section className="panel"><SectionTitle title="Target SGPA check" sub="Set a target and review a transparent, illustrative feasibility result."/><div className="sgpa-layout"><div className="target-card"><label className="field-label">Your target SGPA<input type="number" min="0" max="10" step=".1" value={targetSgpa} onChange={e => setTargetSgpa(e.target.value)}/></label><div className="big-number">{Number(targetSgpa || 0).toFixed(1)}<small> / 10</small></div><p className="muted">Based on your subject credits and the grade-point model configured for this demo.</p></div><div className="feasibility"><div className="feasibility-icon"><Target size={24}/></div><Badge tone={targetReachable && Number(targetSgpa) <= 10 ? 'green' : 'red'}>{targetReachable && Number(targetSgpa) <= 10 ? 'Potentially achievable' : 'Not achievable with current assumptions'}</Badge><h3>{targetReachable && Number(targetSgpa) <= 10 ? 'Keep working towards it.' : 'Review your target.'}</h3><p className="muted">This preliminary check confirms whether the configured maximum marks and pass conditions permit the target. A production-ready result must calculate achievable grade-point combinations across credits.</p></div></div></section>}
+    {activeTab === 'CGPA' && <section className="panel"><SectionTitle title="CGPA calculator" sub="Enter each semester SGPA and credit total. CGPA is credit-weighted; confirm your college's official method."/><div className="cgpa-summary"><span>Estimated CGPA</span><strong>{cgpa.toFixed(2)} <small>/ 10</small></strong></div><div className="semester-list">{semesterSgpas.map((s,i)=><div className="semester-row" key={i}><label className="field-label">Semester<input value={s.name} onChange={e=>setSemesterSgpas(old=>old.map((x,j)=>j===i?{...x,name:e.target.value}:x))}/></label><label className="field-label">SGPA<input type="number" min="0" max="10" step="0.01" value={s.sgpa} onChange={e=>setSemesterSgpas(old=>old.map((x,j)=>j===i?{...x,sgpa:e.target.value}:x))}/></label><label className="field-label">Credits<input type="number" min="1" value={s.credits} onChange={e=>setSemesterSgpas(old=>old.map((x,j)=>j===i?{...x,credits:e.target.value}:x))}/></label><button className="secondary compact" onClick={()=>setSemesterSgpas(old=>old.filter((_,j)=>j!==i))}>Remove</button></div>)}</div><div className="modal-actions"><button className="secondary" onClick={()=>setSemesterSgpas(old=>[...old,{name:`Semester ${old.length+1}`,sgpa:'0',credits:'20'}])}><Plus size={15}/> Add semester</button><button className="primary" onClick={()=>save('c360_semester_sgpas',semesterSgpas)}>Save CGPA inputs</button></div></section>}
+    {activeTab === 'Profile' && <section className="panel"><SectionTitle title="Subjects & credits" sub="Edit demo values or add a subject."/><div className="subject-editor">{subjects.map(s=><div className="subject-edit-row" key={s.id}><b>{s.name}</b><label>Credits<input type="number" min="1" max="10" value={s.credits} onChange={e => updateSubject(s.id,'credits',e.target.value)}/></label><label>Internal<input type="number" min="0" max="100" value={s.internal} onChange={e => updateSubject(s.id,'internal',e.target.value)}/></label><label>Cutoff<input type="number" min="0" max="200" value={s.cutoff} onChange={e => updateSubject(s.id,'cutoff',e.target.value)}/></label></div>)}</div><form className="inline-form" onSubmit={addSubject}><input value={newName} onChange={e => setNewName(e.target.value)} placeholder="New subject name" required/><button className="primary"><Plus size={16}/> Add subject</button></form></section>}
+  </div>
 }
 
 const rideMarkerIcon = L.divIcon({ className: 'ride-map-marker', html: '<span></span>', iconSize: [22,22], iconAnchor: [11,11] })
@@ -884,10 +459,25 @@ function Rides({ rides, requestRide, updateRideRequest, profile, newRide, setNew
 
 function Timetable({ timetable, setTimetable, notify }) {
   const [fileName, setFileName] = useState(() => read('c360_timetable_filename', ''));
-  const [selectedBranch, setSelectedBranch] = useState(() => read('c360_timetable_selected_branch', 'D2A'));
+  const [selectedBranch, setSelectedBranch] = useState(() => read('c360_timetable_selected_branch', 'All'));
   const [rows, setRows] = useState(() => read('c360_timetable_rows', []));
   
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+  const clean = v => String(v ?? '').replace(/\s+/g, ' ').trim();
+  const norm = v => clean(v).toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  const dayName = value => {
+    const v = norm(value);
+    const map = {
+      mon: 'Monday', monday: 'Monday',
+      tue: 'Tuesday', tues: 'Tuesday', tuesday: 'Tuesday',
+      wed: 'Wednesday', wednes: 'Wednesday', wednesday: 'Wednesday',
+      thu: 'Thursday', thur: 'Thursday', thurs: 'Thursday', thursday: 'Thursday',
+      fri: 'Friday', friday: 'Friday'
+    };
+    return map[v] || '';
+  };
 
   async function upload(e) {
     const file = e.target.files?.[0];
@@ -896,114 +486,113 @@ function Timetable({ timetable, setTimetable, notify }) {
     try {
       const buffer = await file.arrayBuffer();
       const workbook = XLSX.read(buffer, { type: 'array' });
-      if (!workbook.SheetNames || !workbook.SheetNames.length) {
-        throw new Error('Workbook contains no sheets.');
-      }
+      if (!workbook.SheetNames.length) throw new Error('Excel workbook has no sheets.');
 
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      // Convert sheet to a flat 2D matrix of strings
-      const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
-      if (!matrix || !matrix.length) {
-        throw new Error('Spreadsheet appears to be empty.');
-      }
-
-      const dayNames = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'];
-      const dayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-      
-      const groupACols = [1, 2, 3, 4, 5, 6];      // Columns B through G
-      const groupBCols = [9, 10, 11, 12, 13, 14]; // Columns J through O
-
-      let currentDay = '';
-      let currentDivMap = {};
-      const parsedEntries = [];
+      let parsedEntries = [];
       const discoveredBranches = new Set();
 
-      for (let rIdx = 0; rIdx < matrix.length; rIdx++) {
-        const row = matrix[rIdx] || [];
-        const cellA = String(row[0] || '').trim().toUpperCase();
-        const cellI = String(row[8] || '').trim().toUpperCase();
+      for (const sheetName of workbook.SheetNames) {
+        const sheet = workbook.Sheets[sheetName];
+        const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        if (!matrix || !matrix.length) continue;
 
-        // 1. Detect if this row is a Day Header (e.g., MONDAY, TUESDAY...)
-        let matchedDay = '';
-        for (let d = 0; d < dayNames.length; d++) {
-          if (cellA.includes(dayNames[d]) || cellI.includes(dayNames[d])) {
-            matchedDay = dayLabels[d];
+        let sheetBranch = '';
+        const sheetBranchMatch = sheetName.match(/(?:FE|SE|TE|BE)?\s*([A-Za-z]+(?:\s*[A-Za-z]+)?(?:\s*-\s*[A-Z0-9])?)/i);
+        if (sheetBranchMatch && sheetBranchMatch[1] && !['sheet', 'table', 'page'].includes(sheetBranchMatch[1].toLowerCase())) {
+          sheetBranch = sheetName.trim();
+        }
+
+        let dayCols = [];
+        let headerRowIndex = -1;
+
+        for (let r = 0; r < Math.min(matrix.length, 15); r++) {
+          const row = matrix[r];
+          const matches = row.map((cell, colIdx) => ({ day: dayName(cell), colIdx })).filter(x => Boolean(x.day));
+          if (matches.length >= 2) {
+            dayCols = matches;
+            headerRowIndex = r;
             break;
           }
         }
 
-        if (matchedDay) {
-          currentDay = matchedDay;
-          // The very next row has the division codes (D2A, D1ADA, etc.)
-          const divRow = matrix[rIdx + 1] || [];
-          currentDivMap = {};
+        if (headerRowIndex >= 0 && dayCols.length >= 2) {
+          let currentDetectedBranch = sheetBranch || 'General';
 
-          [...groupACols, ...groupBCols].forEach(colIdx => {
-            const rawHeader = String(divRow[colIdx] || '').replace(/\n/g, ' ').trim();
-            if (rawHeader) {
-              const divMatch = rawHeader.match(/\b(D\d+[A-Za-z]*)\b/i);
-              const divName = divMatch ? divMatch[1].toUpperCase() : rawHeader.split(/\s+/)[0].toUpperCase();
-              const roomMatch = rawHeader.match(/\b([B\d]{2,4})\b/);
-              const room = roomMatch ? roomMatch[1] : '';
+          for (let r = headerRowIndex + 1; r < matrix.length; r++) {
+            const row = matrix[r];
+            if (!row || !row.length) continue;
 
-              currentDivMap[colIdx] = { div: divName, room };
-              discoveredBranches.add(divName);
+            const branchRowMatch = row.join(' ').match(/(?:branch|division|class|div|dept)?:?\s*(FE\s*[A-Z\s]+(?:\s*Div\s*[A-Z0-9])?|[A-Z]{2,5}(?:\s*-\s*[A-Z0-9])?)/i);
+            if (branchRowMatch && branchRowMatch[1] && branchRowMatch[1].length > 2 && !dayName(branchRowMatch[1])) {
+              currentDetectedBranch = clean(branchRowMatch[1]);
+              discoveredBranches.add(currentDetectedBranch);
+              continue;
             }
-          });
-          continue;
-        }
 
-        // 2. If inside a Day block, parse lecture rows
-        if (currentDay && Object.keys(currentDivMap).length > 0) {
-          const timeA = String(row[0] || '').trim().replace(/\s+/g, ' ');
-          const timeB = String(row[8] || '').trim().replace(/\s+/g, ' ');
+            const timeVal = clean(row[0]) || clean(row[1]);
+            const isTime = /\d{1,2}[:.]\d{2}|\b(?:am|pm)\b/i.test(timeVal);
+            const time = isTime ? timeVal : 'Regular Slot';
 
-          const isTimeSlot = (t) => (t.includes('AM') || t.includes('PM') || t.includes(':')) && !t.toUpperCase().includes('BREAK');
+            for (const { day, colIdx } of dayCols) {
+              const cellVal = clean(row[colIdx]);
+              if (!cellVal || cellVal.length < 2 || dayName(cellVal)) continue;
 
-          if (isTimeSlot(timeA) || isTimeSlot(timeB)) {
-            // Read Group A columns
-            groupACols.forEach(colIdx => {
-              if (currentDivMap[colIdx] && colIdx < row.length) {
-                const val = String(row[colIdx] || '').trim();
-                if (val && val.toUpperCase() !== 'BREAK' && val.length >= 2) {
-                  parsedEntries.push({
-                    id: `${currentDay}-${currentDivMap[colIdx].div}-${rIdx}-${colIdx}-${Math.random()}`,
-                    day: currentDay,
-                    time: timeA || 'Class Slot',
-                    branch: currentDivMap[colIdx].div,
-                    room: currentDivMap[colIdx].room,
-                    subject: val
-                  });
-                }
-              }
-            });
+              const roomMatch = cellVal.match(/(?:room|lab|hall|r-)\s*[:#]?\s*([A-Za-z0-9-]+)/i);
+              const room = roomMatch ? roomMatch[0] : '';
+              const subject = cellVal.replace(/(?:room|lab|hall|r-)\s*[:#]?\s*([A-Za-z0-9-]+)/i, '').trim();
 
-            // Read Group B columns
-            groupBCols.forEach(colIdx => {
-              if (currentDivMap[colIdx] && colIdx < row.length) {
-                const val = String(row[colIdx] || '').trim();
-                if (val && val.toUpperCase() !== 'BREAK' && val.length >= 2) {
-                  parsedEntries.push({
-                    id: `${currentDay}-${currentDivMap[colIdx].div}-${rIdx}-${colIdx}-${Math.random()}`,
-                    day: currentDay,
-                    time: timeB || timeA || 'Class Slot',
-                    branch: currentDivMap[colIdx].div,
-                    room: currentDivMap[colIdx].room,
-                    subject: val
-                  });
-                }
-              }
-            });
+              const branch = currentDetectedBranch || 'General FE';
+              discoveredBranches.add(branch);
+
+              parsedEntries.push({
+                id: `${sheetName}-${r}-${colIdx}-${Math.random()}`,
+                day,
+                time,
+                subject: subject || cellVal,
+                room,
+                branch: branch.trim(),
+              });
+            }
+          }
+        } else {
+          const normHeaders = (matrix[0] || []).map(norm);
+          const findIdx = keys => normHeaders.findIndex(h => keys.some(k => h.includes(k)));
+
+          const dayIdx = findIdx(['day', 'weekday']);
+          const timeIdx = findIdx(['time', 'slot', 'period', 'timing']);
+          const subIdx = findIdx(['subject', 'lecture', 'course', 'activity']);
+          const branchIdx = findIdx(['branch', 'div', 'class', 'department', 'section']);
+          const roomIdx = findIdx(['room', 'venue', 'lab']);
+
+          if (dayIdx >= 0 && subIdx >= 0) {
+            for (let r = 1; r < matrix.length; r++) {
+              const row = matrix[r];
+              const d = dayName(row[dayIdx]);
+              const s = clean(row[subIdx]);
+              if (!d || !s) continue;
+
+              const b = (branchIdx >= 0 && clean(row[branchIdx])) ? clean(row[branchIdx]) : (sheetBranch || 'General FE');
+              discoveredBranches.add(b);
+
+              parsedEntries.push({
+                id: `${sheetName}-${r}-${Math.random()}`,
+                day: d,
+                time: (timeIdx >= 0 && clean(row[timeIdx])) ? clean(row[timeIdx]) : 'Regular Slot',
+                subject: s,
+                room: roomIdx >= 0 ? clean(row[roomIdx]) : '',
+                branch: b.trim(),
+              });
+            }
           }
         }
       }
 
       if (!parsedEntries.length) {
-        throw new Error('Could not identify schedule entries. Please ensure the timetable sheet is formatted with standard day and division headers.');
+        throw new Error('Could not identify schedule entries. Please ensure your sheet includes day names (Mon-Fri) and subjects.');
       }
 
-      const branchList = [...discoveredBranches].sort();
-      const defaultBranch = branchList.includes('D2A') ? 'D2A' : (branchList[0] || 'All');
+      const branchList = [...discoveredBranches].filter(Boolean);
+      const defaultBranch = branchList.length ? branchList[0] : 'All';
 
       setRows(parsedEntries);
       save('c360_timetable_rows', parsedEntries);
@@ -1014,7 +603,7 @@ function Timetable({ timetable, setTimetable, notify }) {
       setFileName(file.name);
       save('c360_timetable_filename', file.name);
 
-      notify(`Loaded timetable! Found ${branchList.length} divisions (${branchList.join(', ')}) with ${parsedEntries.length} lectures.`);
+      notify(`Timetable loaded successfully! Found ${branchList.length || 1} branches and ${parsedEntries.length} lectures.`);
     } catch (err) {
       notify(err.message || 'Error processing spreadsheet.');
     }
@@ -1022,7 +611,8 @@ function Timetable({ timetable, setTimetable, notify }) {
   }
 
   const branchOptions = useMemo(() => {
-    return [...new Set(rows.map(r => r.branch).filter(Boolean))].sort();
+    const list = [...new Set(rows.map(r => r.branch).filter(Boolean))];
+    return list.sort();
   }, [rows]);
 
   const filteredSchedule = useMemo(() => {
@@ -1038,9 +628,9 @@ function Timetable({ timetable, setTimetable, notify }) {
     <div className="page-stack">
       <div className="welcome-row">
         <div>
-          <div className="eyebrow"><CalendarDays size={14}/> FIRST YEAR SCHEDULE</div>
+          <div className="eyebrow"><CalendarDays size={14}/> WEEKLY SCHEDULE</div>
           <h1>Online Timetable</h1>
-          <p className="muted">Upload your FE timetable spreadsheet to view your division's classes from Monday to Friday.</p>
+          <p className="muted">Upload your college timetable sheet and select your branch to view your Monday–Friday schedule.</p>
         </div>
         {rows.length > 0 && <Badge tone="purple">{filteredSchedule.length} lectures scheduled</Badge>}
       </div>
@@ -1048,12 +638,12 @@ function Timetable({ timetable, setTimetable, notify }) {
       <section className="panel timetable-control-panel">
         <div className="timetable-top-controls">
           <div>
-            <h2 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '4px' }}>Import Spreadsheet</h2>
+            <h2 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '4px' }}>Import Timetable</h2>
             <p className="muted" style={{ fontSize: '12px', marginTop: 0 }}>
-              VESIT FE Timetable (.xlsx, .xls)
+              Supports Excel (.xlsx, .xls) and CSV files.
             </p>
             <label className="primary upload-label" style={{ marginTop: '10px' }}>
-              <Plus size={15}/> Choose File
+              <Plus size={15}/> Choose Spreadsheet
               <input type="file" accept=".xlsx,.xls,.csv" onChange={upload} hidden/>
             </label>
             {fileName && (
@@ -1065,28 +655,29 @@ function Timetable({ timetable, setTimetable, notify }) {
 
           <div className="branch-selector-box">
             <label className="field-label" style={{ fontWeight: 700 }}>
-              Select Division
+              Select Branch / Division
               <select
                 value={selectedBranch}
                 onChange={e => handleBranchChange(e.target.value)}
                 disabled={!branchOptions.length}
                 style={{ minWidth: '220px', height: '40px', marginTop: '4px' }}
               >
-                {branchOptions.length > 1 && <option value="All">All Divisions (Overview)</option>}
+                {branchOptions.length > 1 && <option value="All">All Branches (Overview)</option>}
                 {branchOptions.map(b => (
-                  <option key={b} value={b}>Division {b}</option>
+                  <option key={b} value={b}>{b}</option>
                 ))}
-                {!branchOptions.length && <option value="All">Upload timetable to choose division</option>}
+                {!branchOptions.length && <option value="All">No timetable uploaded</option>}
               </select>
             </label>
           </div>
         </div>
       </section>
 
-      {/* Monday - Friday Schedule Cards */}
       <div className="timetable-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
         {days.map(day => {
-          const dayItems = filteredSchedule.filter(r => r.day === day);
+          const dayItems = filteredSchedule
+            .filter(r => r.day === day)
+            .sort((a, b) => a.time.localeCompare(b.time));
 
           return (
             <section className="panel day-card" key={day} style={{ display: 'flex', flexDirection: 'column' }}>
@@ -1114,13 +705,13 @@ function Timetable({ timetable, setTimetable, notify }) {
                         <strong style={{ fontSize: '11px', color: 'var(--primary)' }}>{item.time}</strong>
                         {item.room && (
                           <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                            <MapPin size={11}/> Classroom {item.room}
+                            <MapPin size={11}/> {item.room}
                           </span>
                         )}
                       </div>
-                      <b style={{ fontSize: '12px', color: 'var(--text-main)', lineHeight: 1.4, whiteSpace: 'pre-line' }}>{item.subject}</b>
-                      {selectedBranch === 'All' && (
-                        <small style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Div {item.branch}</small>
+                      <b style={{ fontSize: '13px', color: 'var(--text-main)', lineHeight: 1.4 }}>{item.subject}</b>
+                      {selectedBranch === 'All' && item.branch && (
+                        <small style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{item.branch}</small>
                       )}
                     </div>
                   ))}
@@ -1137,6 +728,7 @@ function Timetable({ timetable, setTimetable, notify }) {
     </div>
   );
 }
+
 function Challenges({ challenges, points, newChallenge, setNewChallenge, addChallenge, toggleChallenge }) {
   const [showPost, setShowPost] = useState(false)
   const [detailChallenge, setDetailChallenge] = useState(null)
@@ -1338,54 +930,55 @@ function CampusPulse({eventsList,setEventsList,assignments,setAssignments,notify
   </div>
 }
 
-function Achievements({ achievements, setAchievements, profile, notify }) {
-  const [showForm, setShowForm] = useState(false)
-  const [filter, setFilter] = useState('All')
-  const [query, setQuery] = useState('')
-  const [form, setForm] = useState({ title: '', category: 'Award', issuer: '', date: new Date().toISOString().slice(0, 10), level: 'Other', credits: '', description: '', proofUrl: '' })
-  const categories = ['All', 'Academic Credits', 'Award', 'Hackathon', 'Competition', 'Certification', 'Sports', 'Arts & Culture', 'Volunteering', 'Research', 'Other']
-  const visible = achievements.filter(item => (filter === 'All' || item.category === filter) && `${item.title} ${item.issuer} ${item.description} ${item.owner}`.toLowerCase().includes(query.toLowerCase()))
-  const totalCredits = achievements.filter(item => item.category === 'Academic Credits').reduce((sum, item) => sum + (Number(item.credits) || 0), 0)
-  const update = (key, value) => setForm(current => ({ ...current, [key]: value }))
-  function submit(e) {
-    e.preventDefault()
-    if (!form.title.trim()) return
-    const item = { ...form, id: Date.now(), title: form.title.trim(), issuer: form.issuer.trim(), description: form.description.trim(), owner: profile?.name || 'Campus360 student', createdAt: new Date().toISOString() }
-    setAchievements(current => [item, ...current])
-    setForm({ title: '', category: 'Award', issuer: '', date: new Date().toISOString().slice(0, 10), level: 'Other', credits: '', description: '', proofUrl: '' })
-    setShowForm(false)
-    notify('Achievement added to your Campus360 profile.')
-  }
-  function remove(id) {
-    if (!window.confirm('Delete this achievement from this browser?')) return
-    setAchievements(current => current.filter(item => item.id !== id))
-    notify('Achievement removed.')
-  }
-  const iconFor = category => category === 'Academic Credits' ? <BookOpen size={18}/> : category === 'Hackathon' ? <Sparkles size={18}/> : category === 'Certification' ? <ShieldCheck size={18}/> : category === 'Sports' ? <Trophy size={18}/> : <Award size={18}/>
-  return <div className="page-stack achievements-page">
-    <div className="achievement-hero">
-      <div className="achievement-hero-copy"><div className="eyebrow"><Award size={14}/> YOUR GROWTH, ALL IN ONE PLACE</div><h1>Achievements</h1><p>Celebrate every win — from academic credits and certifications to hackathons, awards, sports, volunteering and milestones beyond campus.</p><div className="achievement-hero-pills"><span><Check size={14}/> College or personal</span><span><ShieldCheck size={14}/> Your story, your progress</span></div></div>
-      <div className="achievement-hero-art"><div className="achievement-orbit orbit-one"/><div className="achievement-orbit orbit-two"/><div className="achievement-trophy"><Trophy size={48}/></div><span className="achievement-spark spark-one">✦</span><span className="achievement-spark spark-two">✧</span><span className="achievement-spark spark-three">✦</span></div>
-    </div>
-    <div className="achievement-stats">
-      <div className="achievement-stat"><span className="achievement-stat-icon purple"><Award size={19}/></span><div><small>Total achievements</small><strong>{achievements.length}</strong><span>Every milestone counts</span></div></div>
-      <div className="achievement-stat"><span className="achievement-stat-icon blue"><Trophy size={19}/></span><div><small>Wins & recognition</small><strong>{achievements.filter(a => ['Award','Hackathon','Competition','Sports','Arts & Culture'].includes(a.category)).length}</strong><span>Competitions and awards</span></div></div>
-      <div className="achievement-stat"><span className="achievement-stat-icon mint"><BookOpen size={19}/></span><div><small>Academic credits</small><strong>{totalCredits}</strong><span>Credits recorded by you</span></div></div>
-    </div>
-    <section className="panel achievement-toolbar-panel"><div className="achievement-toolbar"><div><h2>Your achievement wall</h2><p className="muted">A personal portfolio of the things you have accomplished.</p></div><button className="primary achievement-add-button" onClick={() => setShowForm(true)}><Plus size={17}/> Add achievement</button></div>
-      <div className="achievement-filters"><label className="achievement-search"><Search size={16}/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search achievements..." aria-label="Search achievements"/></label><div className="achievement-filter-list">{categories.map(category => <button key={category} className={filter === category ? 'active' : ''} onClick={() => setFilter(category)}>{category}</button>)}</div></div>
-      {visible.length === 0 ? <div className="achievement-empty"><div className="achievement-empty-icon"><Award size={28}/></div><h3>{achievements.length ? 'No matches found' : 'Your next big thing starts here'}</h3><p>{achievements.length ? 'Try another category or search term.' : 'Add your first achievement — a hackathon, course credit, certificate, award or any milestone you are proud of.'}</p>{!achievements.length && <button className="primary" onClick={() => setShowForm(true)}><Plus size={16}/> Add your first achievement</button>}</div> : <div className="achievement-grid">{visible.map(item => <article className="achievement-card" key={item.id}><div className="achievement-card-top"><span className={`achievement-card-icon category-${String(item.category).toLowerCase().replace(/[^a-z]+/g,'-')}`}>{iconFor(item.category)}</span><span className="achievement-category">{item.category}</span><button className="achievement-delete" onClick={() => remove(item.id)} title="Delete achievement" aria-label={`Delete ${item.title}`}><X size={16}/></button></div><h3>{item.title}</h3><p className="achievement-issuer">{item.issuer || 'Independent achievement'}</p>{item.description && <p className="achievement-description">{item.description}</p>}<div className="achievement-meta">{item.date && <span><CalendarDays size={14}/>{new Date(`${item.date}T00:00:00`).toLocaleDateString(undefined,{month:'short',year:'numeric'})}</span>}<span><Users size={14}/>{item.owner || 'Campus360 student'}</span></div><div className="achievement-card-bottom"><span className="achievement-level">{item.level || 'Other'}</span>{item.category === 'Academic Credits' && item.credits !== '' && <strong>{item.credits} credits</strong>}{item.proofUrl && <a href={item.proofUrl} target="_blank" rel="noreferrer">View proof <ArrowRight size={13}/></a>}</div></article>)}</div>}
-      <p className="achievement-storage-note"><ShieldCheck size={14}/> Prototype note: achievements are saved in this browser on this device. Shared cross-user profiles need database storage.</p>
-    </section>
-    {showForm && <div className="modal-backdrop" onClick={() => setShowForm(false)}><div className="modal achievement-modal" role="dialog" aria-modal="true" aria-labelledby="achievement-modal-title" onClick={e => e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow"><Sparkles size={13}/> ADD TO YOUR STORY</span><h2 id="achievement-modal-title">Add an achievement</h2><p className="muted">Big or small, it deserves a place here.</p></div><button className="icon-button" type="button" onClick={() => setShowForm(false)} aria-label="Close form"><X size={18}/></button></div><form className="achievement-form" onSubmit={submit}><label className="field-label">Achievement title *<input required maxLength={100} value={form.title} onChange={e => update('title',e.target.value)} placeholder="e.g. First place at a hackathon"/></label><div className="achievement-form-row"><label className="field-label">Category<select value={form.category} onChange={e => update('category',e.target.value)}>{categories.filter(c => c !== 'All').map(c => <option key={c}>{c}</option>)}</select></label><label className="field-label">Level / type<select value={form.level} onChange={e => update('level',e.target.value)}>{['Personal','College','Inter-college','University','State','National','International','Online','Other'].map(v => <option key={v}>{v}</option>)}</select></label></div><div className="achievement-form-row"><label className="field-label">Awarded by / organisation<input maxLength={100} value={form.issuer} onChange={e => update('issuer',e.target.value)} placeholder="e.g. Smart India Hackathon"/></label><label className="field-label">Date<input type="date" value={form.date} onChange={e => update('date',e.target.value)}/></label></div>{form.category === 'Academic Credits' && <label className="field-label">Credits earned<input type="number" min="0" max="999" step="0.5" value={form.credits} onChange={e => update('credits',e.target.value)} placeholder="e.g. 2"/></label>}<label className="field-label">Description<textarea maxLength={800} rows={3} value={form.description} onChange={e => update('description',e.target.value)} placeholder="What did you achieve? Add a little context..."/></label><label className="field-label">Proof link (optional)<input type="url" value={form.proofUrl} onChange={e => update('proofUrl',e.target.value)} placeholder="https://certificate-or-project-link..."/><small>Add a public certificate, portfolio or project link if available.</small></label><div className="achievement-form-actions"><button type="button" className="secondary" onClick={() => setShowForm(false)}>Cancel</button><button type="submit" className="primary"><Award size={16}/> Save achievement</button></div></form></div></div>}
-  </div>
-}
-
-function SkillSwap({skills,setSkills,profile,notify}) {
+function SkillSwap({skills,setSkills,skillRequests,setSkillRequests,profile,notify}) {
   const [showForm,setShowForm]=useState(false)
+  const [requestingSkill,setRequestingSkill]=useState(null)
+  const [acceptingRequest,setAcceptingRequest]=useState(null)
   const [form,setForm]=useState({name:'',category:'Technology',offer:'Can teach',want:'',contact:''})
-  function submit(e){e.preventDefault();setSkills(old=>[{id:Date.now(),...form,owner:profile.name,contact:form.contact||'Campus message'},...old]);setForm({name:'',category:'Technology',offer:'Can teach',want:'',contact:''});setShowForm(false);notify('SkillSwap listing added to this browser prototype.')}
-  return <div className="page-stack"><div className="welcome-row"><div><div className="eyebrow"><Users size={14}/> PEER LEARNING COMMUNITY</div><h1>SkillSwap</h1><p className="muted">Learn from classmates, share what you know and find a study partner.</p></div><button className="primary" onClick={()=>setShowForm(true)}><Plus size={15}/> Offer a skill</button></div><div className="stats-grid three"><Stat label="Peer listings" value={skills.length} hint="Skills offered or requested" icon={Users}/><Stat label="Can teach" value={skills.filter(s=>s.offer==='Can teach').length} hint="Share your strengths" icon={BookOpen}/><Stat label="Want to learn" value={skills.filter(s=>s.offer==='Want to learn').length} hint="Discover new skills" icon={Sparkles}/></div><section className="panel"><SectionTitle title="Peer learning exchange" sub="Sample student listings; contact is a demo placeholder."/><div className="skills-grid">{skills.map(s=><article className="skill-card" key={s.id}><div className="skill-card-top"><Badge tone={s.offer==='Can teach'?'green':'purple'}>{s.offer}</Badge><Badge>{s.category}</Badge></div><h3>{s.name}</h3><p>{s.offer==='Can teach'?'Can help peers learn this skill.':'Looking for a peer to learn with.'}</p><div className="skill-wants"><span>Exchange interest</span><b>{s.want || s.wantSkill || 'Open to suggestions'}</b></div><div className="skill-owner"><div className="avatar small">{s.owner.split(' ').map(x=>x[0]).slice(0,2).join('')}</div><span><b>{s.owner}</b><small>{s.contact}</small></span></div><button className="secondary full" onClick={()=>notify(`Contact flow for ${s.owner} is a prototype; no personal details are shared.`)}>Request peer session</button></article>)}</div></section>{showForm&&<div className="modal-backdrop" onClick={()=>setShowForm(false)}><div className="modal modal-wide" onClick={e=>e.stopPropagation()}><div className="modal-head"><h2>Add a SkillSwap listing</h2><button className="icon-button" onClick={()=>setShowForm(false)}><X size={18}/></button></div><form className="modal-form" onSubmit={submit}><label className="field-label">Skill or subject<input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} required/></label><div className="form-two"><label className="field-label">Category<select value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>{['Technology','Design','Academic','Communication','Creative','Other'].map(x=><option key={x}>{x}</option>)}</select></label><label className="field-label">I want to<select value={form.offer} onChange={e=>setForm({...form,offer:e.target.value})}><option>Can teach</option><option>Want to learn</option></select></label></div><label className="field-label">Skill to exchange / learn<input value={form.want} onChange={e=>setForm({...form,want:e.target.value})} placeholder="e.g. Figma, Python, public speaking"/></label><label className="field-label">Preferred contact method<input value={form.contact} onChange={e=>setForm({...form,contact:e.target.value})} placeholder="e.g. Campus message"/></label><div className="modal-actions"><button type="button" className="secondary" onClick={()=>setShowForm(false)}>Cancel</button><button className="primary">Publish listing</button></div></form></div></div>}</div>
+  const [requestForm,setRequestForm]=useState({name:profile?.name||'',email:'',phone:'',message:''})
+  const [teacherContact,setTeacherContact]=useState({email:'',phone:'',method:'Email',note:''})
+
+  function submit(e){
+    e.preventDefault()
+    const listing={id:Date.now(),...form,owner:profile?.name||'Campus student',contact:form.contact||'Contact shared after acceptance'}
+    setSkills(old=>[listing,...old])
+    setForm({name:'',category:'Technology',offer:'Can teach',want:'',contact:''})
+    setShowForm(false)
+    notify('SkillSwap listing added.')
+  }
+  function submitRequest(e){
+    e.preventDefault()
+    if(!requestingSkill) return
+    if(requestingSkill.owner===(profile?.name||'Campus student')) { notify('You cannot request your own listing.'); return }
+    const duplicate=skillRequests.some(r=>r.skillId===requestingSkill.id && r.requesterName===(requestForm.name.trim()||profile?.name) && r.status!=='declined')
+    if(duplicate){notify('You have already requested this listing.');setRequestingSkill(null);return}
+    setSkillRequests(old=>[{id:Date.now(),skillId:requestingSkill.id,skillName:requestingSkill.name,teacherName:requestingSkill.owner,requesterName:requestForm.name.trim()||profile?.name||'Campus student',requesterEmail:requestForm.email.trim(),requesterPhone:requestForm.phone.trim(),message:requestForm.message.trim(),status:'pending',createdAt:new Date().toISOString(),teacherContact:null},...old])
+    setRequestingSkill(null)
+    setRequestForm({name:profile?.name||'',email:'',phone:'',message:''})
+    notify('Request sent to the skill provider.')
+  }
+  function acceptRequest(e){
+    e.preventDefault()
+    if(!acceptingRequest) return
+    if(!teacherContact.email.trim()&&!teacherContact.phone.trim()){notify('Add an email address or phone number so the student can contact you.');return}
+    setSkillRequests(old=>old.map(r=>r.id===acceptingRequest.id?{...r,status:'accepted',teacherContact:{email:teacherContact.email.trim(),phone:teacherContact.phone.trim(),method:teacherContact.method,note:teacherContact.note.trim()},acceptedAt:new Date().toISOString()}:r))
+    setAcceptingRequest(null)
+    setTeacherContact({email:'',phone:'',method:'Email',note:''})
+    notify('Request accepted. Your contact details are now visible to the requester in this browser prototype.')
+  }
+  const myListings=skills.filter(s=>s.owner===(profile?.name||'Campus student')&&s.offer==='Can teach')
+  const incoming=skillRequests.filter(r=>myListings.some(s=>s.id===r.skillId)&&r.status==='pending')
+  const outgoing=skillRequests.filter(r=>r.requesterName===(profile?.name||'Campus student'))
+  return <div className="page-stack">
+    <div className="welcome-row"><div><div className="eyebrow"><Users size={14}/> PEER LEARNING COMMUNITY</div><h1>SkillSwap</h1><p className="muted">Teach what you know, learn something new, and connect after a request is accepted.</p></div><button className="primary" onClick={()=>setShowForm(true)}><Plus size={15}/> Offer a skill</button></div>
+    <div className="stats-grid three"><Stat label="Peer listings" value={skills.length} hint="Skills offered or requested" icon={Users}/><Stat label="Can teach" value={skills.filter(s=>s.offer==='Can teach').length} hint="Share your strengths" icon={BookOpen}/><Stat label="Requests to review" value={incoming.length} hint="For your teaching listings" icon={Activity}/></div>
+    <section className="panel"><SectionTitle title="Peer learning exchange" sub="Request to learn from a student. Your contact details are shared only after the provider accepts."/><div className="skills-grid">{skills.map(s=>{const isMine=s.owner===(profile?.name||'Campus student');const existing=skillRequests.find(r=>r.skillId===s.id&&r.requesterName===(profile?.name||'Campus student')&&r.status!=='declined');return <article className="skill-card" key={s.id}><div className="skill-card-top"><Badge tone={s.offer==='Can teach'?'green':'purple'}>{s.offer}</Badge><Badge>{s.category}</Badge></div><h3>{s.name}</h3><p>{s.offer==='Can teach'?'Offering peer lessons or guidance.':'Looking for a peer to learn with.'}</p><div className="skill-wants"><span>Exchange interest</span><b>{s.want || s.wantSkill || 'Open to suggestions'}</b></div><div className="skill-owner"><div className="avatar small">{(s.owner||'Student').split(' ').map(x=>x[0]).slice(0,2).join('')}</div><span><b>{s.owner||'Campus student'}</b><small>{isMine?'Your listing':(s.contact||'Contact shared after acceptance')}</small></span></div>{s.offer==='Can teach'&&!isMine?<button className="secondary full" disabled={!!existing} onClick={()=>{setRequestForm({name:profile?.name||'',email:'',phone:'',message:''});setRequestingSkill(s)}}>{existing?(existing.status==='accepted'?'Request accepted':'Request sent'):'Request to learn'}</button>:s.offer==='Can teach'&&isMine?<span className="muted">Your listing · See incoming requests below</span>:<span className="muted">Looking for someone to teach</span>}</article>})}</div>{skills.length===0&&<p className="muted">No listings yet. Be the first to offer a skill.</p>}</section>
+    <section className="panel"><SectionTitle title="Incoming requests" sub="Requests for your own ‘Can teach’ listings. Accept to share contact details with the requester."/><div className="assignment-list">{incoming.map(r=><div className="assignment-row" key={r.id} style={{alignItems:'flex-start',gap:14,flexWrap:'wrap'}}><div className="assignment-copy" style={{flex:'1 1 240px'}}><b>{r.requesterName} wants to learn {r.skillName}</b><small>{r.requesterEmail||'No email provided'}{r.requesterPhone?` · ${r.requesterPhone}`:''}</small>{r.message&&<small>Message: {r.message}</small>}</div><Badge tone="amber">Pending</Badge><button className="primary compact" onClick={()=>{setTeacherContact({email:'',phone:'',method:'Email',note:''});setAcceptingRequest(r)}}><Check size={15}/> Accept request</button></div>)}{incoming.length===0&&<p className="muted">No pending requests for your listings yet. When a student requests one of your skills, it will appear here.</p>}</div></section>
+    <section className="panel"><SectionTitle title="My learning requests" sub="Track requests you've sent and view contact details after acceptance."/><div className="assignment-list">{outgoing.map(r=><div className="assignment-row" key={r.id} style={{alignItems:'flex-start',gap:14,flexWrap:'wrap'}}><div className="assignment-copy" style={{flex:'1 1 240px'}}><b>{r.skillName}</b><small>Provider: {r.teacherName}</small>{r.message&&<small>Your message: {r.message}</small>}{r.status==='accepted'&&r.teacherContact&&<div style={{marginTop:8}}><b>Provider contact details</b>{r.teacherContact.email&&<small>Email: <a href={`mailto:${r.teacherContact.email}`}>{r.teacherContact.email}</a></small>}{r.teacherContact.phone&&<small>Phone: <a href={`tel:${r.teacherContact.phone}`}>{r.teacherContact.phone}</a></small>}{r.teacherContact.note&&<small>Note: {r.teacherContact.note}</small>}</div>}</div><Badge tone={r.status==='accepted'?'green':r.status==='declined'?'red':'amber'}>{r.status==='accepted'?'Accepted':r.status==='declined'?'Declined':'Pending'}</Badge></div>)}{outgoing.length===0&&<p className="muted">You haven't requested a learning session yet.</p>}</div></section>
+    {showForm&&<div className="modal-backdrop" onClick={()=>setShowForm(false)}><div className="modal modal-wide" onClick={e=>e.stopPropagation()}><div className="modal-head"><h2>Add a SkillSwap listing</h2><button className="icon-button" onClick={()=>setShowForm(false)}><X size={18}/></button></div><form className="modal-form" onSubmit={submit}><label className="field-label">Skill or subject<input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} required/></label><div className="form-two"><label className="field-label">Category<select value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>{['Technology','Design','Academic','Communication','Creative','Other'].map(x=><option key={x}>{x}</option>)}</select></label><label className="field-label">I want to<select value={form.offer} onChange={e=>setForm({...form,offer:e.target.value})}><option>Can teach</option><option>Want to learn</option></select></label></div><label className="field-label">Skill to exchange / learn<input value={form.want} onChange={e=>setForm({...form,want:e.target.value})} placeholder="e.g. Figma, Python, public speaking"/></label><label className="field-label">Preferred contact method<input value={form.contact} onChange={e=>setForm({...form,contact:e.target.value})} placeholder="Optional — contact is shared after acceptance"/></label><div className="modal-actions"><button type="button" className="secondary" onClick={()=>setShowForm(false)}>Cancel</button><button className="primary">Publish listing</button></div></form></div></div>}
+    {requestingSkill&&<div className="modal-backdrop" onClick={()=>setRequestingSkill(null)}><div className="modal modal-wide" onClick={e=>e.stopPropagation()}><div className="modal-head"><h2>Request to learn {requestingSkill.name}</h2><button className="icon-button" onClick={()=>setRequestingSkill(null)}><X size={18}/></button></div><p className="muted">Add your contact details so the provider can follow up if they accept.</p><form className="modal-form" onSubmit={submitRequest}><label className="field-label">Your name<input value={requestForm.name} onChange={e=>setRequestForm({...requestForm,name:e.target.value})} required/></label><div className="form-two"><label className="field-label">Email<input type="email" value={requestForm.email} onChange={e=>setRequestForm({...requestForm,email:e.target.value})} placeholder="you@example.com" required/></label><label className="field-label">Phone number<input type="tel" value={requestForm.phone} onChange={e=>setRequestForm({...requestForm,phone:e.target.value})} placeholder="Optional"/></label></div><label className="field-label">Message<textarea rows={3} value={requestForm.message} onChange={e=>setRequestForm({...requestForm,message:e.target.value})} placeholder="What would you like to learn?"/></label><div className="modal-actions"><button type="button" className="secondary" onClick={()=>setRequestingSkill(null)}>Cancel</button><button className="primary">Send request</button></div></form></div></div>}
+    {acceptingRequest&&<div className="modal-backdrop" onClick={()=>setAcceptingRequest(null)}><div className="modal modal-wide" onClick={e=>e.stopPropagation()}><div className="modal-head"><h2>Accept request</h2><button className="icon-button" onClick={()=>setAcceptingRequest(null)}><X size={18}/></button></div><p className="muted">Share the contact details you want the requester to see for {acceptingRequest.requesterName}. At least one contact method is required.</p><form className="modal-form" onSubmit={acceptRequest}><div className="form-two"><label className="field-label">Your email<input type="email" value={teacherContact.email} onChange={e=>setTeacherContact({...teacherContact,email:e.target.value})} placeholder="you@example.com"/></label><label className="field-label">Your phone<input type="tel" value={teacherContact.phone} onChange={e=>setTeacherContact({...teacherContact,phone:e.target.value})} placeholder="Phone number"/></label></div><label className="field-label">Preferred contact method<select value={teacherContact.method} onChange={e=>setTeacherContact({...teacherContact,method:e.target.value})}><option>Email</option><option>Phone</option><option>WhatsApp</option></select></label><label className="field-label">Optional note<textarea rows={2} value={teacherContact.note} onChange={e=>setTeacherContact({...teacherContact,note:e.target.value})} placeholder="e.g. Message me after 5 PM"/></label><div className="modal-actions"><button type="button" className="secondary" onClick={()=>setAcceptingRequest(null)}>Cancel</button><button className="primary"><Check size={15}/> Accept and share details</button></div></form></div></div>}
+  </div>
 }
 
 export default App
