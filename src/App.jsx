@@ -604,20 +604,48 @@ function CampusGuide({ search, eventsList, setEventsList, notify }) {
   const [selected,setSelected] = useState(null)
   const [clubFilter,setClubFilter] = useState('All')
   const states=['Registration Open','Starting Soon','Live Now','Event Ended']
-  const locations=[
-    {name:'Central Library',category:'Facilities',place:'Library building',detail:'Open the official VESIT Library page for library facilities and information.',url:'https://vesit.ves.ac.in/infrastructure/library/',linkLabel:'Open VESIT Library Website'},
-    {name:'Campus Canteen',category:'Facilities',place:'Student facilities area',detail:'Open the official VESIT Canteen page for canteen facilities and information.',url:'https://vesit.ves.ac.in/infrastructure/canteen/',linkLabel:'Open VESIT Canteen Website'},
-    {name:'Principal / Director Office',category:'Administration',place:'Administration block',detail:'For formal academic and administrative matters. Confirm office room and visiting hours with VESIT.'},
-    {
-  name: 'VESIT Rail / Transport Help',
-  category: 'Transport',
-  place: 'Student support directory',
-  detail: 'Open the official VESIT Rail portal for railway-related student services.',
-url: 'https://rail.vesit.ves.ac.in/'
-    },
-    {name:'Reception / Main Desk',category:'Administration',place:'Main entrance',detail:'Open the official VESIT contact page for reception and general enquiries.',url:'https://vesit.ves.ac.in/footer/contact-us/',linkLabel:'Open VESIT Contact Page'},
-    {name:'VES Council',category:'Student bodies',place:'Student council',detail:'Student representation, campus initiatives and student-facing announcements. Confirm current office-bearers with the college.'},
-  ]
+const locations = [
+  {
+    name: 'Central Library',
+    category: 'Facilities',
+    place: 'Library building',
+    detail: 'Study spaces, borrowing and reference resources. Visit the official VESIT Library page for details.',
+    url: 'https://vesit.ves.ac.in/infrastructure/library/'
+  },
+  {
+    name: 'Campus Canteen',
+    category: 'Facilities',
+    place: 'Student facilities area',
+    detail: 'Food and refreshments. Visit the official VESIT Canteen page for details.',
+    url: 'https://vesit.ves.ac.in/infrastructure/canteen/'
+  },
+  {
+    name: 'Principal / Director Office',
+    category: 'Administration',
+    place: 'Administration block',
+    detail: 'For formal academic and administrative matters. Confirm office room and visiting hours with VESIT.'
+  },
+  {
+    name: 'VESIT Rail / Transport Help',
+    category: 'Transport',
+    place: 'Student support directory',
+    detail: 'Open the official VESIT Rail portal for railway-related student services.',
+    url: 'https://rail.vesit.ves.ac.in/'
+  },
+  {
+    name: 'Reception / Main Desk',
+    category: 'Administration',
+    place: 'Main entrance',
+    detail: 'First point of contact for visitors, directions and general enquiries.',
+    url: 'https://vesit.ves.ac.in/footer/contact-us/'
+  },
+  {
+    name: 'VES Council',
+    category: 'Student bodies',
+    place: 'Student council',
+    detail: 'Student representation, campus initiatives and student-facing announcements. Confirm current office-bearers with the college.'
+  }
+];
   const clubs=[
     {name:'Coding / Technical Club',category:'Technical',president:'To be confirmed by college',detail:'Technical workshops, peer coding and project sessions.'},
     {name:'Robotics / Electronics Club',category:'Technical',president:'To be confirmed by college',detail:'Hands-on hardware, robotics and engineering activities.'},
