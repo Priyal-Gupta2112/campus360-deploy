@@ -451,294 +451,134 @@ function Rides({ rides, requestRide, updateRideRequest, profile, newRide, setNew
     <section className="panel"><SectionTitle title="Available student rides" sub="Student verification is a prototype status only; identity verification is not connected yet."/><div className="ride-list">{filtered.map(r=><div className="panel ride-card" key={r.id}><div className="ride-icon"><Bike size={23}/></div><div className="ride-main"><div className="ride-route"><b>{r.from}</b><ArrowRight size={15}/><b>{r.to}</b></div><p><Clock3 size={14}/>{r.time}<span className="separator">·</span><Users size={14}/>{r.seats} seats <span className="separator">·</span>Offered by {r.driver}</p><div className="ride-meta"><Badge tone="blue">{r.vehicleType || 'Vehicle not specified'}</Badge><Badge tone="amber">{r.paymentMode || 'Payment to be agreed'}</Badge>{r.fare!==undefined && r.fare!=='' && <Badge>₹{r.fare}</Badge>}</div><div className="ride-meta"><Badge tone={r.status === 'Available' ? 'green' : r.status === 'Requested' ? 'amber' : 'purple'}>{r.status}</Badge><Badge tone="green"><ShieldCheck size={12}/> {r.verified ? 'Profile checked (demo)' : 'Verification pending'}</Badge></div></div><button className={r.status === 'Available' ? 'primary' : 'secondary'} disabled={r.status !== 'Available'} onClick={() => requestRide(r.id)}>{r.status === 'Available' ? 'Request seat' : 'Request sent'}<ArrowRight size={15}/></button>{r.driver===profile.name && (r.requests||[]).length>0 && <div className="ride-requests"><b>Incoming requests</b>{r.requests.map(q=><div className="ride-request-row" key={q.id}><span>{q.requester} · <strong>{q.status}</strong></span>{q.status==='Pending' && <span className="request-actions"><button className="primary compact" onClick={()=>updateRideRequest(r.id,q.id,'Accepted')}>Accept</button><button className="secondary compact" onClick={()=>updateRideRequest(r.id,q.id,'Rejected')}>Reject</button></span>}</div>)}</div>}</div>)}</div></section>
     {showForm && <div className="modal-backdrop" onClick={() => setShowForm(false)}><div className="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="ride-modal-title" onClick={e => e.stopPropagation()}><div className="modal-head"><div><h2 id="ride-modal-title">Offer a campus ride</h2><p className="muted">Add route details for other students.</p></div><button className="icon-button" onClick={() => setShowForm(false)} aria-label="Close"><X size={18}/></button></div><form className="ride-form" onSubmit={e=>{addRide(e);setShowForm(false)}}><label className="field-label">Pickup point<input value={newRide.from} onChange={e=>setNewRide({...newRide,from:e.target.value})} placeholder="e.g. Chembur Station" required/></label><label className="field-label">Destination<input value={newRide.to} onChange={e=>setNewRide({...newRide,to:e.target.value})} placeholder="e.g. VESIT campus" required/></label><label className="field-label">Departure time<input value={newRide.time} onChange={e=>setNewRide({...newRide,time:e.target.value})} placeholder="e.g. 8:30 AM" required/></label><label className="field-label">Available seats<input type="number" min="1" max="8" value={newRide.seats} onChange={e=>setNewRide({...newRide,seats:e.target.value})} required/></label><label className="field-label">Vehicle type<select value={newRide.vehicleType} onChange={e=>setNewRide({...newRide,vehicleType:e.target.value})} required><option>Car</option><option>Bike</option><option>Scooter</option><option>Auto-rickshaw</option><option>Public transport</option><option>Other</option></select></label><label className="field-label">Payment method<select value={newRide.paymentMode} onChange={e=>setNewRide({...newRide,paymentMode:e.target.value})} required><option>Pay before ride</option><option>Meterwise</option><option>Free / sharing costs</option><option>Pay after ride</option></select></label><label className="field-label">Expected fare (₹, optional)<input type="number" min="0" value={newRide.fare} onChange={e=>setNewRide({...newRide,fare:e.target.value})} placeholder="e.g. 80"/></label><label className="field-label">Pickup latitude (optional)<input type="number" step="any" value={newRide.lat || ''} onChange={e=>setNewRide({...newRide,lat:e.target.value})} placeholder="Approximate map latitude"/></label><label className="field-label">Pickup longitude (optional)<input type="number" step="any" value={newRide.lng || ''} onChange={e=>setNewRide({...newRide,lng:e.target.value})} placeholder="Approximate map longitude"/></label><div className="ride-verification-note"><ShieldCheck size={16}/> Student verification is not connected to a college identity provider yet. Listings are marked as demo profiles.</div><div className="modal-actions"><button type="button" className="secondary" onClick={()=>setShowForm(false)}>Cancel</button><button className="primary" type="submit">Publish ride <ArrowRight size={16}/></button></div></form></div></div>}
   </div>
+  url: 'https://rail.vesit.ves.ac.in/'
 }
 
 function Timetable({ timetable, setTimetable, notify }) {
-  const [fileName, setFileName] = useState(() => read('c360_timetable_filename', ''));
-  const [selectedBranch, setSelectedBranch] = useState(() => read('c360_timetable_selected_branch', 'All'));
+  const [fileName, setFileName] = useState('');
+  const [selectedClass, setSelectedClass] = useState('All');
+  const [selectedDivision, setSelectedDivision] = useState('All');
   const [rows, setRows] = useState(() => read('c360_timetable_rows', []));
-  
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-
-  const clean = v => String(v ?? '').replace(/\s+/g, ' ').trim();
-  const norm = v => clean(v).toLowerCase().replace(/[^a-z0-9]/g, '');
-
-  const dayName = value => {
-    const v = norm(value);
-    const map = {
-      mon: 'Monday', monday: 'Monday',
-      tue: 'Tuesday', tues: 'Tuesday', tuesday: 'Tuesday',
-      wed: 'Wednesday', wednes: 'Wednesday', wednesday: 'Wednesday',
-      thu: 'Thursday', thur: 'Thursday', thurs: 'Thursday', thursday: 'Thursday',
-      fri: 'Friday', friday: 'Friday'
-    };
-    return map[v] || '';
-  };
-
+  const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const classOptions = [...new Set(rows.map(r => r.className).filter(Boolean))];
+  const divisionOptions = [...new Set(rows.filter(r => selectedClass === 'All' || r.className === selectedClass).map(r => r.division).filter(Boolean))];
+  const visibleRows = rows.filter(r => (selectedClass === 'All' || r.className === selectedClass) && (selectedDivision === 'All' || r.division === selectedDivision));
   async function upload(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+    const file = e.target.files?.[0]; if (!file) return;
     try {
-      const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: 'array' });
-      if (!workbook.SheetNames.length) throw new Error('Excel workbook has no sheets.');
-
-      let parsedEntries = [];
-      const discoveredBranches = new Set();
-
-      // Iterate through all sheets in the Excel workbook
-      for (const sheetName of workbook.SheetNames) {
-        const sheet = workbook.Sheets[sheetName];
-        const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
-        if (!matrix || !matrix.length) continue;
-
-        // Try to identify branch/division from sheet name if applicable (e.g. "FE-CMPN-A")
-        let sheetBranch = '';
-        const sheetBranchMatch = sheetName.match(/(?:FE|SE|TE|BE)?\s*([A-Za-z]+(?:\s*[A-Za-z]+)?(?:\s*-\s*[A-Z0-9])?)/i);
-        if (sheetBranchMatch && sheetBranchMatch[1] && !['sheet', 'table', 'page'].includes(sheetBranchMatch[1].toLowerCase())) {
-          sheetBranch = sheetName.trim();
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+      const clean = v => String(v ?? '').replace(/\s+/g, ' ').trim();
+      const norm = v => clean(v).toLowerCase().replace(/[^a-z0-9]/g, '');
+      const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+      if (!matrix.length) throw new Error('The spreadsheet is empty.');
+      const dayName = value => { const v = norm(value); return days.find(d => norm(d) === v || (v.length >= 3 && norm(d).startsWith(v))) || ''; };
+      let headerIndex = matrix.findIndex(row => {
+        const cells = row.map(norm);
+        return cells.some(x => ['day','weekday','days','time','timeslot','period','subject','lecture','division','div','class','branch','room'].includes(x)) && row.some(cell => dayName(cell));
+      });
+      if (headerIndex < 0) headerIndex = matrix.findIndex(row => row.map(dayName).filter(Boolean).length >= 2);
+      let parsed = [];
+      if (headerIndex >= 0) {
+        const headers = (matrix[headerIndex] || []).map(clean);
+        const headerNorms = headers.map(norm);
+        const findCol = aliases => {
+          for (const alias of aliases) { const exact = headerNorms.findIndex(h => h === alias); if (exact >= 0) return exact; }
+          for (const alias of aliases) { const partial = headerNorms.findIndex(h => h && h.includes(alias)); if (partial >= 0) return partial; }
+          return -1;
+        };
+        const dayI = findCol(['day','weekday','days']);
+        const timeI = findCol(['time','timeslot','period','lecturetime','timing','fromto']);
+        const subjectI = findCol(['subject','subjectname','lecture','paper','topic','coursecode','coursename','activity','classname']);
+        const classI = findCol(['class','year','branch','program','department','semester','course']);
+        const divI = findCol(['division','div','section','batch']);
+        const roomI = findCol(['room','location','venue','classroom']);
+        const teacherI = findCol(['teacher','faculty','instructor','staff']);
+        if (dayI >= 0 && subjectI >= 0) {
+          parsed = matrix.slice(headerIndex + 1).map((row, i) => ({
+            id: i, day: dayName(row[dayI]), time: clean(row[timeI]) || 'Time not specified', subject: clean(row[subjectI]) || 'Class / activity',
+            room: roomI >= 0 ? clean(row[roomI]) : '', teacher: teacherI >= 0 ? clean(row[teacherI]) : '',
+            className: classI >= 0 ? clean(row[classI]) : '', division: divI >= 0 ? clean(row[divI]) : ''
+          })).filter(r => r.day && r.subject);
         }
-
-        // Find header row or rows containing weekdays
-        let dayCols = [];
-        let headerRowIndex = -1;
-
-        for (let r = 0; r < Math.min(matrix.length, 15); r++) {
-          const row = matrix[r];
-          const matches = row.map((cell, colIdx) => ({ day: dayName(cell), colIdx })).filter(x => Boolean(x.day));
-          if (matches.length >= 2) {
-            dayCols = matches;
-            headerRowIndex = r;
-            break;
-          }
-        }
-
-        if (headerRowIndex >= 0 && dayCols.length >= 2) {
-          // Matrix-format timetable: Columns represent days, rows represent timeslots
-          let currentDetectedBranch = sheetBranch || 'General';
-
-          for (let r = headerRowIndex + 1; r < matrix.length; r++) {
-            const row = matrix[r];
-            if (!row || !row.length) continue;
-
-            const firstCell = clean(row[0]);
-            
-            // Look for branch heading embedded within rows (e.g., "Branch: Computer Engineering Div A" or "FE IT")
-            const branchRowMatch = row.join(' ').match(/(?:branch|division|class|div|dept)?:?\s*(FE\s*[A-Z\s]+(?:\s*Div\s*[A-Z0-9])?|[A-Z]{2,5}(?:\s*-\s*[A-Z0-9])?)/i);
-            if (branchRowMatch && branchRowMatch[1] && branchRowMatch[1].length > 2 && !dayName(branchRowMatch[1])) {
-              currentDetectedBranch = clean(branchRowMatch[1]);
-              discoveredBranches.add(currentDetectedBranch);
-              continue;
-            }
-
-            // Extract timeslot from first or second column
-            const timeVal = clean(row[0]) || clean(row[1]);
-            const isTime = /\d{1,2}[:.]\d{2}|\b(?:am|pm)\b/i.test(timeVal);
-            const time = isTime ? timeVal : 'Regular Slot';
-
-            // Extract classes under each day column
-            for (const { day, colIdx } of dayCols) {
-              const cellVal = clean(row[colIdx]);
-              if (!cellVal || cellVal.length < 2 || dayName(cellVal)) continue;
-
-              // Extract optional Room or Faculty if written like "Maths (Room 302)"
-              const roomMatch = cellVal.match(/(?:room|lab|hall|r-)\s*[:#]?\s*([A-Za-z0-9-]+)/i);
-              const room = roomMatch ? roomMatch[0] : '';
-              const subject = cellVal.replace(/(?:room|lab|hall|r-)\s*[:#]?\s*([A-Za-z0-9-]+)/i, '').trim();
-
-              const branch = currentDetectedBranch || 'General FE';
-              discoveredBranches.add(branch);
-
-              parsedEntries.push({
-                id: `${sheetName}-${r}-${colIdx}-${Math.random()}`,
-                day,
-                time,
-                subject: subject || cellVal,
-                room,
-                branch: branch.trim(),
-              });
-            }
-          }
-        } else {
-          // Relational format: columns like [Day, Time, Subject, Branch/Div]
-          const normHeaders = (matrix[0] || []).map(norm);
-          const findIdx = keys => normHeaders.findIndex(h => keys.some(k => h.includes(k)));
-
-          const dayIdx = findIdx(['day', 'weekday']);
-          const timeIdx = findIdx(['time', 'slot', 'period', 'timing']);
-          const subIdx = findIdx(['subject', 'lecture', 'course', 'activity']);
-          const branchIdx = findIdx(['branch', 'div', 'class', 'department', 'section']);
-          const roomIdx = findIdx(['room', 'venue', 'lab']);
-
-          if (dayIdx >= 0 && subIdx >= 0) {
-            for (let r = 1; r < matrix.length; r++) {
-              const row = matrix[r];
-              const d = dayName(row[dayIdx]);
-              const s = clean(row[subIdx]);
-              if (!d || !s) continue;
-
-              const b = (branchIdx >= 0 && clean(row[branchIdx])) ? clean(row[branchIdx]) : (sheetBranch || 'General FE');
-              discoveredBranches.add(b);
-
-              parsedEntries.push({
-                id: `${sheetName}-${r}-${Math.random()}`,
-                day: d,
-                time: (timeIdx >= 0 && clean(row[timeIdx])) ? clean(row[timeIdx]) : 'Regular Slot',
-                subject: s,
-                room: roomIdx >= 0 ? clean(row[roomIdx]) : '',
-                branch: b.trim(),
-              });
-            }
+        if (!parsed.length) {
+          const header = matrix[headerIndex] || [];
+          const dayColumns = header.map((cell, i) => ({ day: dayName(cell), i })).filter(x => x.day);
+          if (dayColumns.length >= 2) {
+            parsed = matrix.slice(headerIndex + 1).flatMap((row, ri) => dayColumns.flatMap(({day, i}) => {
+              const subject = clean(row[i]); if (!subject) return [];
+              const time = clean(row[0]) || 'Time not specified';
+              const match = subject.match(/\b(?:div(?:ision)?\s*)?([A-H])\b/i);
+              return [{ id: `${ri}-${i}`, day, time, subject: subject.replace(/\s+/g,' '), room: '', teacher: '', className: '', division: match ? `Division ${match[1].toUpperCase()}` : '' }];
+            }));
           }
         }
       }
-
-      if (!parsedEntries.length) {
-        throw new Error('Could not identify schedule entries. Please ensure your sheet includes day names (Mon-Fri) and subjects.');
+      if (!parsed.length) {
+        const rowWithDays = matrix.findIndex(row => row.map(dayName).filter(Boolean).length >= 2);
+        if (rowWithDays >= 0) {
+          const dayColumns = matrix[rowWithDays].map((cell, i) => ({ day: dayName(cell), i })).filter(x => x.day);
+          parsed = matrix.slice(rowWithDays + 1).flatMap((row, ri) => dayColumns.flatMap(({day, i}) => {
+            const subject = clean(row[i]); if (!subject) return [];
+            const time = clean(row[0]) || 'Time not specified';
+            const divisionMatch = subject.match(/\b(?:div(?:ision)?\s*)?([A-H])\b/i);
+            return [{ id: `${ri}-${i}`, day, time, subject, room: '', teacher: '', className: '', division: divisionMatch ? `Division ${divisionMatch[1].toUpperCase()}` : '' }];
+          }));
+        }
       }
-
-      const branchList = [...discoveredBranches].filter(Boolean);
-      const defaultBranch = branchList.length ? branchList[0] : 'All';
-
-      setRows(parsedEntries);
-      save('c360_timetable_rows', parsedEntries);
-
-      setSelectedBranch(defaultBranch);
-      save('c360_timetable_selected_branch', defaultBranch);
-
-      setFileName(file.name);
-      save('c360_timetable_filename', file.name);
-
-      notify(`Timetable loaded successfully! Found ${branchList.length || 1} branches and ${parsedEntries.length} lectures.`);
-    } catch (err) {
-      notify(err.message || 'Error processing spreadsheet.');
-    }
+      if (!parsed.length) throw new Error('Could not detect a timetable. Use a table with Day + Subject columns, or a weekly grid with weekday names across the top.');
+      parsed = parsed.map((r, i) => ({ ...r, id: r.id ?? i, className: r.className || 'All classes', division: r.division || 'All divisions' }));
+      setRows(parsed); save('c360_timetable_rows', parsed);
+      setSelectedClass([...new Set(parsed.map(r => r.className))][0] || 'All'); setSelectedDivision('All');
+      const grouped = {}; days.forEach(d => grouped[d] = []);
+      parsed.forEach(r => grouped[r.day].push({ time: r.time, subject: r.subject, room: r.room, teacher: r.teacher, className: r.className, division: r.division }));
+      setTimetable(grouped); setFileName(file.name); notify(`Imported ${parsed.length} timetable entries. Choose a class and division to filter.`);
+    } catch (err) { notify(err.message || 'Could not read this spreadsheet.'); }
     e.target.value = '';
   }
+  const shown = rows.length ? visibleRows : Object.entries(timetable).flatMap(([day,items])=>(items||[]).map((item,i)=>({...item,day,id:`${day}-${i}`,className:'Class not specified',division:'Division not specified'}))).filter(r=>days.includes(r.day));
+  return <div className="page-stack"><div className="welcome-row"><div><div className="eyebrow"><CalendarDays size={14}/> WEEKLY SCHEDULE</div><h1>Your online timetable</h1><p className="muted">Upload the college spreadsheet, then choose the class and division.</p></div><Badge tone="purple">{shown.length} classes</Badge></div>
+    <section className="panel timetable-upload"><div><h2>Import timetable spreadsheet</h2><p className="muted">Excel or CSV. The app detects Day, Subject, Class/Branch and Division columns from the first worksheet.</p><label className="primary upload-label">Choose spreadsheet<input type="file" accept=".xlsx,.xls,.csv" onChange={upload} hidden/></label>{fileName&&<small className="upload-success">Imported: {fileName}</small>}</div><div className="upload-hint"><BookOpen size={28}/><b>Excel or CSV</b><small>Saved locally in this browser.</small></div></section>
+    <section className="panel timetable-select-panel"><SectionTitle title="Choose your timetable" sub="Select the class and division you want to display."/>
+<div className="timetable-filters">
+  <label className="field-label">
+    Class / Branch
+    <CustomSelect
+      ariaLabel="Class / Branch"
+      value={selectedClass}
+      onChange={(value) => {
+        setSelectedClass(value);
+        setSelectedDivision('All');
+      }}
+      options={[
+        { value: 'All', label: 'All classes' },
+        ...classOptions.map((v) => ({
+          value: v,
+          label: v,
+        })),
+      ]}
+    />
+  </label>
 
-  // Branch Options List
-  const branchOptions = useMemo(() => {
-    const list = [...new Set(rows.map(r => r.branch).filter(Boolean))];
-    return list.sort();
-  }, [rows]);
-
-  // Filter rows by the selected branch
-  const filteredSchedule = useMemo(() => {
-    return rows.filter(r => selectedBranch === 'All' || r.branch === selectedBranch);
-  }, [rows, selectedBranch]);
-
-  function handleBranchChange(b) {
-    setSelectedBranch(b);
-    save('c360_timetable_selected_branch', b);
-  }
-
-  return (
-    <div className="page-stack">
-      <div className="welcome-row">
-        <div>
-          <div className="eyebrow"><CalendarDays size={14}/> WEEKLY SCHEDULE</div>
-          <h1>Online Timetable</h1>
-          <p className="muted">Upload your college timetable sheet and select your branch to view your Monday–Friday schedule.</p>
-        </div>
-        {rows.length > 0 && <Badge tone="purple">{filteredSchedule.length} lectures scheduled</Badge>}
-      </div>
-
-      {/* Upload and Branch Selection Panel */}
-      <section className="panel timetable-control-panel">
-        <div className="timetable-top-controls">
-          <div>
-            <h2 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '4px' }}>Import Timetable</h2>
-            <p className="muted" style={{ fontSize: '12px', marginTop: 0 }}>
-              Supports Excel (.xlsx, .xls) and CSV files.
-            </p>
-            <label className="primary upload-label" style={{ marginTop: '10px' }}>
-              <Plus size={15}/> Choose Spreadsheet
-              <input type="file" accept=".xlsx,.xls,.csv" onChange={upload} hidden/>
-            </label>
-            {fileName && (
-              <small className="upload-success" style={{ display: 'block', marginTop: '8px', color: 'var(--success-text)' }}>
-                Active: <b>{fileName}</b>
-              </small>
-            )}
-          </div>
-
-          {/* Single Branch Selection Box */}
-          <div className="branch-selector-box">
-            <label className="field-label" style={{ fontWeight: 700 }}>
-              Select Branch / Division
-              <select
-                value={selectedBranch}
-                onChange={e => handleBranchChange(e.target.value)}
-                disabled={!branchOptions.length}
-                style={{ minWidth: '220px', height: '40px', marginTop: '4px' }}
-              >
-                {branchOptions.length > 1 && <option value="All">All Branches (Overview)</option>}
-                {branchOptions.map(b => (
-                  <option key={b} value={b}>{b}</option>
-                ))}
-                {!branchOptions.length && <option value="All">No timetable uploaded</option>}
-              </select>
-            </label>
-          </div>
-        </div>
-      </section>
-
-      {/* Monday - Friday Schedule Cards */}
-      <div className="timetable-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
-        {days.map(day => {
-          const dayItems = filteredSchedule
-            .filter(r => r.day === day)
-            .sort((a, b) => a.time.localeCompare(b.time));
-
-          return (
-            <section className="panel day-card" key={day} style={{ display: 'flex', flexDirection: 'column' }}>
-              <div className="day-heading" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid var(--border-base)', paddingBottom: '8px' }}>
-                <h2 style={{ fontSize: '15px', margin: 0 }}>{day}</h2>
-                <Badge tone={dayItems.length ? 'purple' : 'slate'}>{dayItems.length} {dayItems.length === 1 ? 'class' : 'classes'}</Badge>
-              </div>
-
-              {dayItems.length > 0 ? (
-                <div style={{ display: 'grid', gap: '10px' }}>
-                  {dayItems.map(item => (
-                    <div
-                      className="timetable-item"
-                      key={item.id}
-                      style={{
-                        padding: '10px 12px',
-                        borderRadius: 'var(--radius-sm)',
-                        background: 'var(--bg-surface-alt)',
-                        borderLeft: '3px solid var(--primary)',
-                        display: 'grid',
-                        gap: '4px'
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <strong style={{ fontSize: '11px', color: 'var(--primary)' }}>{item.time}</strong>
-                        {item.room && (
-                          <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                            <MapPin size={11}/> {item.room}
-                          </span>
-                        )}
-                      </div>
-                      <b style={{ fontSize: '13px', color: 'var(--text-main)', lineHeight: 1.4 }}>{item.subject}</b>
-                      {selectedBranch === 'All' && item.branch && (
-                        <small style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{item.branch}</small>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="muted" style={{ fontSize: '12px', textAlign: 'center', margin: 'auto 0', padding: '24px 0' }}>
-                  No classes scheduled
-                </p>
-              )}
-            </section>
-          );
-        })}
-      </div>
-    </div>
-  );
+  <label className="field-label">
+    Division / Section
+    <CustomSelect
+      ariaLabel="Division / Section"
+      value={selectedDivision}
+      onChange={setSelectedDivision}
+      options={[
+        { value: 'All', label: 'All divisions' },
+        ...divisionOptions.map((v) => ({
+          value: v,
+          label: v,
+        })),
+      ]}
+    />
+  </label>
+</div>
+{!rows.length&&<p className="muted">Upload your timetable spreadsheet to populate the class and division lists.</p>}</section>
+    <div className="timetable-grid">{days.map(day=>{const items=shown.filter(r=>r.day===day);return <section className="panel day-card" key={day}><div className="day-heading"><h2>{day}</h2><Badge>{items.length} items</Badge></div>{items.length?items.sort((a,b)=>a.time.localeCompare(b.time)).map((item,i)=><div className="timetable-item" key={`${day}-${item.id ?? i}`}><strong>{item.time}</strong><b>{item.subject}</b>{item.className && item.className!=='Class not specified'&&<small>{item.className}{item.division&&item.division!=='Division not specified'?` · ${item.division}`:''}</small>}{item.room&&<small><MapPin size={12}/> {item.room}</small>}{item.teacher&&<small>{item.teacher}</small>}</div>):<p className="muted">No classes for this selection.</p>}</section>})}</div><p className="table-note"><CircleHelp size={15}/> If your spreadsheet uses different column headings, tell me the headers and I can tune the importer.</p></div>
 }
 
 function Challenges({ challenges, points, newChallenge, setNewChallenge, addChallenge, toggleChallenge }) {
@@ -796,6 +636,17 @@ function CampusGuide({ search, eventsList, setEventsList, notify }) {
     <section className="panel"><SectionTitle title={`VESIT clubs & student communities (${clubs.length} sample listings)`} sub="Club names and presidents must be verified against the official current college directory."/><div className="filter-row">{['All','Technical','Cultural','Literary','Sports','Creative'].map(s=><button key={s} className={clubFilter===s?'active':''} onClick={()=>setClubFilter(s)}>{s}</button>)}</div><div className="directory-grid">{shownClubs.map((c,i)=><div className="directory-card club-card" key={c.name}><span className={`directory-icon directory-${i%4}`}><Users size={19}/></span><b>{c.name}</b><small>{c.category}</small><p>{c.detail}</p><div className="club-president"><strong>President</strong><span>{c.president}</span></div><button className="text-button" onClick={()=>notify('Club contact information needs verification by the college admin.')}>Contact club <ArrowRight size={14}/></button></div>)}</div></section>
     <section className="panel"><SectionTitle title="Campus location guide" sub="OpenStreetMap view centred approximately on the VESIT campus area."/><div className="leaflet-map-wrap"><MapContainer center={[19.0445,72.8992]} zoom={15} scrollWheelZoom={false} style={{height:'330px',width:'100%'}}><TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/><Marker position={[19.0445,72.8992]} icon={rideMarkerIcon}><Popup>VESIT campus area (approximate). Confirm exact building locations locally.</Popup></Marker></MapContainer></div><p className="map-disclaimer">Map markers and directory information are prototype placeholders; verify official details before public use.</p></section>
     {selected&&<div className="modal-backdrop" onClick={()=>setSelected(null)}><div className="modal" role="dialog" aria-modal="true" onClick={e=>e.stopPropagation()}><div className="modal-head"><Badge tone="purple">{selected.category}</Badge><button className="icon-button" onClick={()=>setSelected(null)}><X size={18}/></button></div><h2>{selected.name}</h2><p className="muted">{selected.detail}</p><div className="challenge-detail-meta"><span><MapPin size={15}/> {selected.place}</span><span><CircleHelp size={15}/> Check official college contacts for verified hours and phone numbers.</span></div><button className="primary full" onClick={()=>setSelected(null)}>Close details</button></div></div>}
+    {selected.url && (
+  <p>
+    <a
+      href={selected.url}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Open VESIT Rail Portal →
+    </a>
+  </p>
+)}
   </div>
 }
 
