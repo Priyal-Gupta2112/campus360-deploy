@@ -73,15 +73,14 @@ function App() {
   const [profile, setProfile] = useState(() => read('c360_profile', { name: 'Alex Student', interests: 'Technology, Design', subjects: 'Programming, Mathematics' }))
 
   // Always logged in on localhost; on live server, preserve session across page refreshes
-  const [loggedIn, setLoggedIn] = useState(() => {
+const [loggedIn, setLoggedIn] = useState(() => {
+  try {
     if (import.meta.env.DEV) return true;
-    try {
-      return localStorage.getItem('c360_logged_in') === 'true';
-    } catch {
-      return false;
-    }
-  })
-
+    return localStorage.getItem('c360_logged_in') === 'true';
+  } catch {
+    return false;
+  }
+});
   const [showLogin, setShowLogin] = useState(false)
   const [notice, setNotice] = useState('')
   const [notifications, setNotifications] = useState(() => read('c360_notifications', []))
@@ -187,6 +186,7 @@ function App() {
   function handleLogout() {
     try {
       localStorage.removeItem('c360_logged_in');
+      setLoggedIn(false);
     } catch {}
     setLoggedIn(false);
     setLogoutConfirm(false);
