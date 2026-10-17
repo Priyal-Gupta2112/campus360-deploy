@@ -635,17 +635,37 @@ function CampusGuide({ search, eventsList, setEventsList, notify }) {
     <section className="panel"><SectionTitle title="What's happening on campus?" sub="Browse events and preview status changes."/><div className="filter-row">{['All',...states].map(s=><button key={s} className={eventFilter===s?'active':''} onClick={()=>setEventFilter(s)}>{s}</button>)}</div>{shownEvents.length?<div className="event-list">{shownEvents.map((ev,i)=><div className="event-row event-row-wide" key={ev.id||ev.name}><div className={`event-date ed-${i%3}`}><CalendarDays size={20}/><small>{ev.time.split('·')[0].trim().toUpperCase()}</small></div><div className="event-info"><b>{ev.name}</b><small>{ev.time}</small><Badge tone={ev.state==='Live Now'?'green':ev.state==='Event Ended'?'slate':ev.state==='Starting Soon'?'amber':'purple'}>{ev.state}</Badge></div><button className="secondary compact" onClick={()=>cycleEvent(ev.id||ev.name)}>Update status <ArrowRight size={14}/></button></div>)}</div>:<p className="muted">No events match this filter. Open Campus Pulse to add an event.</p>}</section>
     <section className="panel"><SectionTitle title={`VESIT clubs & student communities (${clubs.length} sample listings)`} sub="Club names and presidents must be verified against the official current college directory."/><div className="filter-row">{['All','Technical','Cultural','Literary','Sports','Creative'].map(s=><button key={s} className={clubFilter===s?'active':''} onClick={()=>setClubFilter(s)}>{s}</button>)}</div><div className="directory-grid">{shownClubs.map((c,i)=><div className="directory-card club-card" key={c.name}><span className={`directory-icon directory-${i%4}`}><Users size={19}/></span><b>{c.name}</b><small>{c.category}</small><p>{c.detail}</p><div className="club-president"><strong>President</strong><span>{c.president}</span></div><button className="text-button" onClick={()=>notify('Club contact information needs verification by the college admin.')}>Contact club <ArrowRight size={14}/></button></div>)}</div></section>
     <section className="panel"><SectionTitle title="Campus location guide" sub="OpenStreetMap view centred approximately on the VESIT campus area."/><div className="leaflet-map-wrap"><MapContainer center={[19.0445,72.8992]} zoom={15} scrollWheelZoom={false} style={{height:'330px',width:'100%'}}><TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/><Marker position={[19.0445,72.8992]} icon={rideMarkerIcon}><Popup>VESIT campus area (approximate). Confirm exact building locations locally.</Popup></Marker></MapContainer></div><p className="map-disclaimer">Map markers and directory information are prototype placeholders; verify official details before public use.</p></section>
-    {selected&&<div className="modal-backdrop" onClick={()=>setSelected(null)}><div className="modal" role="dialog" aria-modal="true" onClick={e=>e.stopPropagation()}><div className="modal-head"><Badge tone="purple">{selected.category}</Badge><button className="icon-button" onClick={()=>setSelected(null)}><X size={18}/></button></div><h2>{selected.name}</h2><p className="muted">{selected.detail}</p><div className="challenge-detail-meta"><span><MapPin size={15}/> {selected.place}</span><span><CircleHelp size={15}/> Check official college contacts for verified hours and phone numbers.</span></div><button className="primary full" onClick={()=>setSelected(null)}>Close details</button></div></div>}
-    {selected.url && (
-  <p>
-    <a
-      href={selected.url}
-      target="_blank"
-      rel="noopener noreferrer"
+    {selected && (
+  <div
+    className="modal-backdrop"
+    onClick={() => setSelected(null)}
+  >
+    <div
+      className="modal"
+      onClick={e => e.stopPropagation()}
     >
-      Open VESIT Rail Portal →
-    </a>
-  </p>
+      {/* Keep your existing modal content here */}
+
+      {selected.url && (
+        <p style={{ marginTop: '12px' }}>
+          <a
+            href={selected.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: '#5145f5',
+              fontWeight: 600,
+              textDecoration: 'underline'
+            }}
+          >
+            Open VESIT Rail Portal →
+          </a>
+        </p>
+      )}
+
+      {/* Keep your existing Close details button here */}
+    </div>
+  </div>
 )}
   </div>
 }
